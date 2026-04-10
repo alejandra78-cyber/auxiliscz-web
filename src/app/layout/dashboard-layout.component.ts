@@ -14,16 +14,10 @@ import { AuthService } from '../features/auth/auth.service';
         <div class="brand">AuxilioSCZ</div>
         <nav>
           <a routerLink="/dashboard" routerLinkActive="active">Inicio</a>
-          <a routerLink="/incidentes" routerLinkActive="active">Incidentes</a>
-          <a routerLink="/taller/historial-atenciones" routerLinkActive="active">Historial de Atenciones</a>
-          <a routerLink="/taller/disponibilidad" routerLinkActive="active">Disponibilidad</a>
-          <a routerLink="/taller/servicios" routerLinkActive="active">Servicios</a>
-          <a routerLink="/taller/tecnicos" routerLinkActive="active">Técnicos</a>
-          <a routerLink="/talleres" routerLinkActive="active">Talleres</a>
-          <a routerLink="/pagos" routerLinkActive="active">Pagos</a>
-          <a routerLink="/reportes" routerLinkActive="active">Reportes</a>
-          <a routerLink="/perfil" routerLinkActive="active">Perfil</a>
-          <a routerLink="/cambiar-password" routerLinkActive="active">Cambiar contraseña</a>
+          <a routerLink="/talleres/registrar" routerLinkActive="active" *ngIf="role === 'admin'">Registrar taller</a>
+          <a routerLink="/admin/roles-permisos" routerLinkActive="active" *ngIf="role === 'admin'">Roles y permisos</a>
+          <a routerLink="/taller/disponibilidad" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Disponibilidad</a>
+          <a routerLink="/recover-password" routerLinkActive="active">Recuperar contraseña</a>
         </nav>
         <button class="logout" (click)="logout()">Cerrar sesión</button>
       </aside>
@@ -115,10 +109,14 @@ import { AuthService } from '../features/auth/auth.service';
   `],
 })
 export class DashboardLayoutComponent {
+  role = '';
+
   constructor(
     private readonly authService: AuthService,
     private readonly router: Router,
-  ) {}
+  ) {
+    this.role = this.authService.getCurrentRole();
+  }
 
   logout(): void {
     this.authService.logout();

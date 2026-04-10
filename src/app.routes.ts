@@ -1,41 +1,40 @@
 import { Routes } from '@angular/router';
 
-import { AdminDashboardComponent } from './admin-dashboard.component';
 import { DashboardLayoutComponent } from './app/layout/dashboard-layout.component';
+import { roleGuard } from './app/core/guards/role.guard';
 import { authGuard } from './app/features/auth/auth.guard';
-import { CambiarPasswordComponent } from './app/features/auth/cambiar-password/page/cambiar-password.component';
 import { LoginComponent } from './app/features/auth/login/login.component';
-import { HistorialPageComponent } from './app/features/historial/historial-page.component';
-import { PagosPageComponent } from './app/features/pagos/pagos-page.component';
-import { PerfilPageComponent } from './app/features/perfil/perfil-page.component';
-import { ReportesPageComponent } from './app/features/reportes/reportes-page.component';
+import { RecoverPasswordPageComponent } from './app/features/auth/pages/recover-password/recover-password-page.component';
+import { RolesPermisosPageComponent } from './app/features/admin/pages/roles-permisos/roles-permisos-page.component';
+import { InicioPageComponent } from './app/features/dashboard/pages/inicio/inicio-page.component';
 import { DisponibilidadPageComponent } from './app/features/taller/disponibilidad-page.component';
-import { HistorialAtencionesPageComponent } from './app/features/taller/historial-atenciones-page.component';
-import { ServiciosPageComponent } from './app/features/taller/servicios-page.component';
-import { TecnicosPageComponent } from './app/features/taller/tecnicos-page.component';
-import { TalleresPageComponent } from './app/features/talleres/talleres-page.component';
-import { IncidentesComponent } from './incidentes/incidentes.component';
+import { RegistrarTallerPageComponent } from './app/features/talleres/pages/registrar-taller/registrar-taller-page.component';
 
 export const appRoutes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'recover-password', component: RecoverPasswordPageComponent },
   {
     path: '',
     component: DashboardLayoutComponent,
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: AdminDashboardComponent },
-      { path: 'incidentes', component: IncidentesComponent },
-      { path: 'historial', component: HistorialPageComponent },
-      { path: 'taller/historial-atenciones', component: HistorialAtencionesPageComponent },
-      { path: 'taller/tecnicos', component: TecnicosPageComponent },
-      { path: 'taller/disponibilidad', component: DisponibilidadPageComponent },
-      { path: 'taller/servicios', component: ServiciosPageComponent },
-      { path: 'talleres', component: TalleresPageComponent },
-      { path: 'pagos', component: PagosPageComponent },
-      { path: 'reportes', component: ReportesPageComponent },
-      { path: 'perfil', component: PerfilPageComponent },
-      { path: 'cambiar-password', component: CambiarPasswordComponent },
+      { path: 'dashboard', component: InicioPageComponent },
+      {
+        path: 'admin/roles-permisos',
+        component: RolesPermisosPageComponent,
+        canActivate: [roleGuard(['admin'])],
+      },
+      {
+        path: 'talleres/registrar',
+        component: RegistrarTallerPageComponent,
+        canActivate: [roleGuard(['admin'])],
+      },
+      {
+        path: 'taller/disponibilidad',
+        component: DisponibilidadPageComponent,
+        canActivate: [roleGuard(['taller', 'admin'])],
+      },
     ],
   },
   { path: '**', redirectTo: '' },

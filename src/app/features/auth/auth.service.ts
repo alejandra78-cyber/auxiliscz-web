@@ -3,11 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-import {
-  CambiarPasswordRequest,
-  CambiarPasswordResponse,
-} from './cambiar-password/models/cambiar-password.model';
-
 export interface LoginRequest {
   email: string;
   password: string;
@@ -18,6 +13,48 @@ export interface LoginResponse {
   token_type: string;
 }
 
+export interface RegisterRequest {
+  nombre: string;
+  email: string;
+  password: string;
+  telefono?: string;
+  rol?: 'conductor' | 'taller' | 'admin';
+}
+
+export interface UserOut {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono?: string | null;
+  rol: 'conductor' | 'taller' | 'admin';
+  creado_en?: string;
+}
+
+export interface RolePermissionsResponse {
+  rol: string;
+  permisos: string[];
+}
+
+export interface ChangeRoleRequest {
+  usuario_id: string;
+  nuevo_rol: 'conductor' | 'taller' | 'admin';
+}
+
+export interface RecoverPasswordRequest {
+  email: string;
+}
+
+export interface RecoverPasswordResponse {
+  ok: boolean;
+  mensaje: string;
+  reset_token?: string | null;
+}
+
+export interface ResetPasswordRequest {
+  reset_token: string;
+  nueva_password: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly tokenKey = 'access_token';
@@ -26,6 +63,10 @@ export class AuthService {
     : `${environment.apiUrl}/api`;
 
   constructor(private readonly http: HttpClient) {}
+
+  register(payload: RegisterRequest): Observable<UserOut> {
+    return this.http.post<UserOut>(`${this.apiBase}/auth/register`, payload);
+  }
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiBase}/auth/login`, payload).pipe(
@@ -47,10 +88,32 @@ export class AuthService {
     localStorage.removeItem(this.tokenKey);
   }
 
-  cambiarPassword(payload: CambiarPasswordRequest): Observable<CambiarPasswordResponse> {
-    return this.http.patch<CambiarPasswordResponse>(
-      `${this.apiBase}/auth/cambiar-password`,
-      payload,
-    );
+  requestPasswordRecovery(payload: RecoverPasswordRequest): Observable<RecoverPasswordResponse> {
+    return this.http.post<RecoverPasswordResponse>(`${this.apiBase}/auth/password/recovery-request`, payload);
+  }
+
+  resetPassword(payload: ResetPasswordRequest): Observable<{ ok: boolean; mensaje: string }> {
+    return this.http.post<{ ok: boolean; mensaje: string }>(`${this.apiBase}/auth/password/reset`, payload);
+  }
+
+  getRolePermissions(rol: string): Observable<RolePermissionsResponse> {
+    return this.http.get<RolePermissionsResponse>(`${this.apiBase}/auth/roles/${rol}/permisos`);
+  }
+
+  changeRole(payload: ChangeRoleRequest): Observable<UserOut> {
+    return this.http.patch<UserOut>(`${this.apiBase}/auth/roles`, payload);
+  }
+
+  getCurrentRole(): string {
+    const token = this.getToken();
+    if (!token) return '';
+    const parts = token.split('.');
+    if (parts.length !== 3) return '';
+    try {
+      const payload = JSON.parse(atob(parts[1]));
+      return payload?.rol ?? '';
+    } catch {
+      return '';
+    }
   }
 }

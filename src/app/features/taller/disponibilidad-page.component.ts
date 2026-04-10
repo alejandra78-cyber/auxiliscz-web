@@ -9,20 +9,28 @@ import { Taller, TallerService } from './taller.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <h2>Disponibilidad del Taller</h2>
+    <section class="card">
+      <h2>Gestionar Disponibilidad del Taller</h2>
 
-    <p *ngIf="taller">Taller: {{ taller.nombre }}</p>
-    <p *ngIf="taller">Estado actual: {{ taller.disponible ? 'Disponible' : 'No disponible' }}</p>
+      <p *ngIf="taller"><strong>Taller:</strong> {{ taller.nombre }}</p>
+      <p *ngIf="taller"><strong>Estado actual:</strong> {{ taller.disponible ? 'Disponible' : 'No disponible' }}</p>
 
-    <label>
-      <input type="checkbox" [(ngModel)]="disponible" />
-      Disponible
-    </label>
-    <button (click)="guardar()">Actualizar disponibilidad</button>
+      <label class="inline">
+        <input type="checkbox" [(ngModel)]="disponible" />
+        Disponible
+      </label>
+      <button (click)="guardar()">Actualizar disponibilidad</button>
 
-    <p *ngIf="mensaje">{{ mensaje }}</p>
-    <p *ngIf="error" style="color: #b42318">{{ error }}</p>
+      <p *ngIf="mensaje" class="ok">{{ mensaje }}</p>
+      <p *ngIf="error" class="error">{{ error }}</p>
+    </section>
   `,
+  styles: [`
+    .card { max-width: 680px; background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
+    .inline { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .ok { color:#027a48; }
+    .error { color:#b42318; }
+  `],
 })
 export class DisponibilidadPageComponent implements OnInit {
   taller: Taller | null = null;
@@ -39,14 +47,13 @@ export class DisponibilidadPageComponent implements OnInit {
   cargar(): void {
     this.tallerService.obtenerMiTaller().subscribe({
       next: (res) => {
-        this.taller = res ?? this.demoTaller();
+        this.taller = res;
         this.disponible = !!res.disponible;
         this.error = '';
       },
       error: (err) => {
-        this.error = err?.error?.detail ?? 'No se pudo cargar taller. Mostrando datos de ejemplo.';
-        this.taller = this.demoTaller();
-        this.disponible = this.taller.disponible;
+        this.error = err?.error?.detail ?? 'No se pudo cargar taller';
+        this.taller = null;
       },
     });
   }
@@ -62,14 +69,5 @@ export class DisponibilidadPageComponent implements OnInit {
         this.error = err?.error?.detail ?? 'No se pudo actualizar disponibilidad';
       },
     });
-  }
-
-  private demoTaller(): Taller {
-    return {
-      id: 'TAL-01',
-      nombre: 'Taller Central SCZ',
-      disponible: true,
-      servicios: ['motor', 'llanta', 'bateria'],
-    };
   }
 }

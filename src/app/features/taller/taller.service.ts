@@ -13,8 +13,12 @@ export interface Tecnico {
 export interface Taller {
   id: string;
   nombre: string;
+  direccion?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
   disponible: boolean;
   servicios: string[];
+  calificacion?: number;
 }
 
 export interface Incidente {
@@ -39,6 +43,16 @@ export interface HistorialAtencion {
   pago_estado: string | null;
 }
 
+export interface TallerCreateRequest {
+  usuario_id: string;
+  nombre: string;
+  direccion?: string;
+  latitud?: number;
+  longitud?: number;
+  servicios: string[];
+  disponible: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TallerService {
   private readonly apiBase = environment.apiUrl.endsWith('/api')
@@ -49,6 +63,10 @@ export class TallerService {
 
   obtenerMiTaller(): Observable<Taller> {
     return this.http.get<Taller>(`${this.apiBase}/talleres/mi-taller`);
+  }
+
+  registrarTaller(payload: TallerCreateRequest): Observable<Taller> {
+    return this.http.post<Taller>(`${this.apiBase}/talleres/`, payload);
   }
 
   cambiarDisponibilidad(disponible: boolean): Observable<Taller> {
