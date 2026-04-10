@@ -9,7 +9,7 @@ import { AuthService } from '../../../auth/auth.service';
   imports: [CommonModule],
   template: `
     <section class="card">
-      <h2>AuxiliSCZ - Frontend Ciclo 1</h2>
+      <h2>AuxiliSCZ</h2>
       <p>Rol autenticado: <strong>{{ role || 'sin rol' }}</strong></p>
       <p class="muted">Módulos activos: Auth, Talleres (registro/disponibilidad).</p>
     </section>
