@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { AuthService } from '../../../auth/auth.service';
+import { AdminUserListItem, AuthService } from '../../../auth/services/auth.service';
 
 @Component({
   selector: 'app-roles-permisos-page',
@@ -26,10 +26,34 @@ import { AuthService } from '../../../auth/auth.service';
         <li *ngFor="let permiso of permisos">{{ permiso }}</li>
       </ul>
 
+      <section class="users-block">
+        <h3>Usuarios creados</h3>
+        <p *ngIf="loadingUsuarios">Cargando usuarios...</p>
+        <table *ngIf="usuarios.length">
+          <thead>
+            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acción</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of usuarios">
+              <td>{{ u.nombre }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.rol }}</td>
+              <td><button type="button" (click)="seleccionarUsuario(u.id)">Seleccionar</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <p *ngIf="!loadingUsuarios && !usuarios.length">No hay usuarios registrados.</p>
+      </section>
+
       <form [formGroup]="cambioForm" (ngSubmit)="cambiarRol()" class="form-grid">
         <h3>Cambiar rol de usuario</h3>
-        <label>ID usuario</label>
-        <input type="text" formControlName="usuario_id" />
+        <label>Usuario</label>
+        <select formControlName="usuario_id">
+          <option value="" disabled>Selecciona un usuario</option>
+          <option *ngFor="let u of usuarios" [value]="u.id">
+            {{ u.nombre }} ({{ u.email }}) - rol actual: {{ u.rol }}
+          </option>
+        </select>
 
         <label>Nuevo rol</label>
         <select formControlName="nuevo_rol">
@@ -46,18 +70,25 @@ import { AuthService } from '../../../auth/auth.service';
     </section>
   `,
   styles: [`
-    .card { max-width: 760px; background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
+    .card { max-width: 860px; background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
     .form-grid { display:grid; gap:8px; margin-top: 14px; }
     .permisos { margin: 12px 0; padding-left: 16px; }
+    .users-block { margin-top: 14px; }
+    table { width:100%; border-collapse: collapse; margin-top:8px; }
+    th, td { border-bottom:1px solid #eef1f6; padding:8px; text-align:left; }
+    th { color:#1f3a7a; }
+    td button { padding:6px 10px; font-size:12px; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
     h3 { margin: 10px 0 0; }
   `],
 })
-export class RolesPermisosPageComponent {
+export class RolesPermisosPageComponent implements OnInit {
   loadingConsulta = false;
   loadingCambio = false;
+  loadingUsuarios = false;
   permisos: string[] = [];
+  usuarios: AdminUserListItem[] = [];
   ok = '';
   error = '';
 
@@ -74,6 +105,28 @@ export class RolesPermisosPageComponent {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
   ) {}
+
+  ngOnInit(): void {
+    this.cargarUsuarios();
+  }
+
+  cargarUsuarios(): void {
+    this.loadingUsuarios = true;
+    this.authService.listUsersForAdmin().subscribe({
+      next: (res) => {
+        this.loadingUsuarios = false;
+        this.usuarios = res ?? [];
+      },
+      error: (err) => {
+        this.loadingUsuarios = false;
+        this.error = err?.error?.detail ?? 'No se pudo cargar usuarios';
+      },
+    });
+  }
+
+  seleccionarUsuario(id: string): void {
+    this.cambioForm.patchValue({ usuario_id: id });
+  }
 
   consultar(): void {
     this.loadingConsulta = true;
@@ -107,6 +160,10 @@ export class RolesPermisosPageComponent {
       next: (res) => {
         this.loadingCambio = false;
         this.ok = `Rol actualizado: ${res.email} -> ${res.rol}`;
+        if (res.rol === 'taller') {
+          this.ok += ' | Siguiente paso: registrar datos del taller en "Registrar taller".';
+        }
+        this.cargarUsuarios();
       },
       error: (err) => {
         this.loadingCambio = false;

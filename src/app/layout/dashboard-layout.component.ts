@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
-import { AuthService } from '../features/auth/auth.service';
+import { AuthService } from '../features/auth/services/auth.service';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -14,9 +14,11 @@ import { AuthService } from '../features/auth/auth.service';
         <div class="brand">AuxilioSCZ</div>
         <nav>
           <a routerLink="/dashboard" routerLinkActive="active">Inicio</a>
-          <a routerLink="/talleres/registrar" routerLinkActive="active" *ngIf="role === 'admin'">Registrar taller</a>
+          <a routerLink="/taller/registrar" routerLinkActive="active" *ngIf="role === 'admin'">Registrar taller</a>
+          <a routerLink="/taller/tecnicos" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Técnicos</a>
           <a routerLink="/admin/roles-permisos" routerLinkActive="active" *ngIf="role === 'admin'">Roles y permisos</a>
           <a routerLink="/taller/disponibilidad" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Disponibilidad</a>
+          <a routerLink="/taller/desempeno" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Desempeño</a>
           <a routerLink="/recover-password" routerLinkActive="active">Recuperar contraseña</a>
         </nav>
         <button class="logout" (click)="logout()">Cerrar sesión</button>

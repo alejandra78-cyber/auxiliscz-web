@@ -40,6 +40,14 @@ export interface ChangeRoleRequest {
   nuevo_rol: 'conductor' | 'taller' | 'admin';
 }
 
+export interface AdminUserListItem {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono?: string | null;
+  rol: 'conductor' | 'taller' | 'admin';
+}
+
 export interface RecoverPasswordRequest {
   email: string;
 }
@@ -102,6 +110,14 @@ export class AuthService {
 
   changeRole(payload: ChangeRoleRequest): Observable<UserOut> {
     return this.http.patch<UserOut>(`${this.apiBase}/auth/roles`, payload);
+  }
+
+  listUsersForAdmin(): Observable<AdminUserListItem[]> {
+    return this.http.get<AdminUserListItem[]>(`${this.apiBase}/admin/usuarios/lista`);
+  }
+
+  listTallerCandidates(): Observable<AdminUserListItem[]> {
+    return this.http.get<AdminUserListItem[]>(`${this.apiBase}/admin/usuarios/taller-candidatos`);
   }
 
   getCurrentRole(): string {

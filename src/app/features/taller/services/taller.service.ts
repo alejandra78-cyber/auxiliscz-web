@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 
 export interface Tecnico {
   id: string;
@@ -62,29 +62,23 @@ export class TallerService {
   constructor(private readonly http: HttpClient) {}
 
   obtenerMiTaller(): Observable<Taller> {
-    return this.http.get<Taller>(`${this.apiBase}/talleres/mi-taller`);
+    return this.http.get<Taller>(`${this.apiBase}/taller/mi-taller`);
   }
 
   registrarTaller(payload: TallerCreateRequest): Observable<Taller> {
-    return this.http.post<Taller>(`${this.apiBase}/talleres/`, payload);
+    return this.http.post<Taller>(`${this.apiBase}/taller/`, payload);
   }
 
   cambiarDisponibilidad(disponible: boolean): Observable<Taller> {
-    return this.http.patch<Taller>(
-      `${this.apiBase}/talleres/mi-taller/disponibilidad`,
-      { disponible },
-    );
+    return this.http.patch<Taller>(`${this.apiBase}/taller/mi-taller/disponibilidad`, { disponible });
   }
 
   listarTecnicos(): Observable<Tecnico[]> {
-    return this.http.get<Tecnico[]>(`${this.apiBase}/talleres/mi-taller/tecnicos`);
+    return this.http.get<Tecnico[]>(`${this.apiBase}/taller/mi-taller/tecnicos`);
   }
 
   registrarTecnico(nombre: string, disponible = true): Observable<Tecnico> {
-    return this.http.post<Tecnico>(
-      `${this.apiBase}/talleres/mi-taller/tecnicos`,
-      { nombre, disponible },
-    );
+    return this.http.post<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos`, { nombre, disponible });
   }
 
   listarSolicitudesPendientes(): Observable<Incidente[]> {
@@ -92,15 +86,10 @@ export class TallerService {
   }
 
   actualizarEstadoServicio(incidenteId: string, nuevoEstado: string, costo?: number): Observable<any> {
-    return this.http.patch(
-      `${this.apiBase}/incidentes/${incidenteId}/estado`,
-      { nuevo_estado: nuevoEstado, costo },
-    );
+    return this.http.patch(`${this.apiBase}/incidentes/${incidenteId}/estado`, { nuevo_estado: nuevoEstado, costo });
   }
 
   obtenerHistorialAtenciones(): Observable<HistorialAtencion[]> {
-    return this.http.get<HistorialAtencion[]>(
-      `${this.apiBase}/talleres/mi-taller/historial-atenciones`,
-    );
+    return this.http.get<HistorialAtencion[]>(`${this.apiBase}/taller/mi-taller/historial-atenciones`);
   }
 }

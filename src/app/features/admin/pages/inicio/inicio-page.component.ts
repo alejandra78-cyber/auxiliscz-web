@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
-import { AuthService } from '../../../auth/auth.service';
+import { AuthService } from '../../../auth/services/auth.service';
 
 @Component({
   selector: 'app-inicio-page',
@@ -11,7 +11,7 @@ import { AuthService } from '../../../auth/auth.service';
     <section class="card">
       <h2>AuxiliSCZ</h2>
       <p>Rol autenticado: <strong>{{ role || 'sin rol' }}</strong></p>
-      <p class="muted">Módulos activos: Auth, Talleres (registro/disponibilidad).</p>
+      <p class="muted">Módulos activos: Auth, Taller, Asignación, Pagos, Admin y Emergencia.</p>
     </section>
   `,
   styles: [`

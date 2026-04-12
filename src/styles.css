@@ -1,3 +1,5 @@
+@import "leaflet/dist/leaflet.css";
+
 :root {
   --brand-primary: #1f3a7a;
   --brand-primary-dark: #163267;
@@ -69,3 +71,17 @@ h1, h2, h3 {
   color: var(--text);
 }
 
+/* Leaflet fixes: evita tiles cortados/partidos por reglas globales de imagen */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.leaflet-container img,
+.leaflet-pane img,
+img.leaflet-tile,
+img.leaflet-marker-icon,
+img.leaflet-marker-shadow {
+  max-width: none !important;
+  max-height: none !important;
+}
