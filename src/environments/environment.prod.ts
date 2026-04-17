@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://auxilioscz-backend.onrender.com/api'
+  apiUrl: 'https://auxiliscz-backend.onrender.com/api'
 };
