@@ -20,7 +20,12 @@ import { AuthService } from '../../services/auth.service';
           <input id="email" type="email" formControlName="email" />
 
           <label for="password">Contraseña</label>
-          <input id="password" type="password" formControlName="password" />
+          <div class="password-field">
+            <input id="password" [type]="showLoginPassword ? 'text' : 'password'" formControlName="password" />
+            <button type="button" class="pass-toggle" (click)="showLoginPassword = !showLoginPassword">
+              {{ showLoginPassword ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
 
           <button type="submit" [disabled]="loading || form.invalid">
             {{ loading ? 'Ingresando...' : 'Iniciar sesión' }}
@@ -43,7 +48,12 @@ import { AuthService } from '../../services/auth.service';
             <input type="email" formControlName="email" />
 
             <label>Contraseña</label>
-            <input type="password" formControlName="password" />
+            <div class="password-field">
+              <input [type]="showRegisterPassword ? 'text' : 'password'" formControlName="password" />
+              <button type="button" class="pass-toggle" (click)="showRegisterPassword = !showRegisterPassword">
+                {{ showRegisterPassword ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
 
             <label>Teléfono</label>
             <input type="text" formControlName="telefono" />
@@ -96,6 +106,23 @@ import { AuthService } from '../../services/auth.service';
     input {
       width: 100%;
     }
+    .password-field {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .pass-toggle {
+      margin-top: 0;
+      min-width: 88px;
+      background: #edf2ff;
+      color: #1f3a7a;
+      border: 1px solid #d5def5;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+    .pass-toggle:hover {
+      background: #e1e9ff;
+    }
     button {
       margin-top: 6px;
       background: #1f3a7a;
@@ -141,6 +168,8 @@ export class LoginComponent {
   registerError = '';
   registerOk = '';
   showRegister = false;
+  showLoginPassword = false;
+  showRegisterPassword = false;
 
   readonly form = this.createLoginForm();
   readonly registerForm = this.createRegisterForm();

@@ -30,7 +30,12 @@ import { AuthService } from '../../services/auth.service';
         <input type="text" formControlName="reset_token" />
 
         <label>Nueva contraseña</label>
-        <input type="password" formControlName="nueva_password" />
+        <div class="password-field">
+          <input [type]="showNewPassword ? 'text' : 'password'" formControlName="nueva_password" />
+          <button type="button" class="pass-toggle" (click)="showNewPassword = !showNewPassword">
+            {{ showNewPassword ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </div>
 
         <button type="submit" [disabled]="loadingReset || resetForm.invalid">
           {{ loadingReset ? 'Restableciendo...' : 'Restablecer contraseña' }}
@@ -45,6 +50,15 @@ import { AuthService } from '../../services/auth.service';
     .card { max-width: 680px; background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
     .muted { color:#6d7890; margin-bottom: 12px; }
     .form-block { display:grid; gap:8px; margin: 12px 0 16px; }
+    .password-field { display:flex; align-items:stretch; gap:8px; }
+    .pass-toggle {
+      min-width:88px;
+      background:#edf2ff;
+      color:#1f3a7a;
+      border:1px solid #d5def5;
+      margin-top:0;
+    }
+    .pass-toggle:hover { background:#e1e9ff; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
     .token { background:#f7f9ff; border:1px dashed #98a2b3; border-radius:8px; padding:8px; word-break:break-all; }
@@ -60,6 +74,7 @@ export class RecoverPasswordPageComponent {
 
   resetMessage = '';
   resetError = '';
+  showNewPassword = false;
 
   readonly requestForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
