@@ -4,6 +4,21 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 
 import { AuthService } from '../features/auth/services/auth.service';
 
+type UserRole = 'admin' | 'taller' | 'tecnico' | 'cliente' | 'conductor' | '';
+
+interface MenuItem {
+  label: string;
+  path: string;
+  roles: UserRole[];
+}
+
+interface MenuSection {
+  key: string;
+  title: string;
+  roles: UserRole[];
+  items: MenuItem[];
+}
+
 @Component({
   selector: 'app-dashboard-layout',
   standalone: true,
@@ -11,22 +26,43 @@ import { AuthService } from '../features/auth/services/auth.service';
   template: `
     <div class="layout">
       <aside class="sidebar">
-        <div class="brand">AuxilioSCZ</div>
-        <nav>
-          <a routerLink="/dashboard" routerLinkActive="active">Inicio</a>
-          <a routerLink="/taller/registrar" routerLinkActive="active" *ngIf="role === 'admin'">Registrar taller</a>
-          <a routerLink="/taller/tecnicos" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Técnicos</a>
-          <a routerLink="/admin/roles-permisos" routerLinkActive="active" *ngIf="role === 'admin'">Roles y permisos</a>
-          <a routerLink="/taller/disponibilidad" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Disponibilidad</a>
-          <a routerLink="/taller/desempeno" routerLinkActive="active" *ngIf="role === 'taller' || role === 'admin'">Desempeño</a>
-          <a routerLink="/recover-password" routerLinkActive="active">Recuperar contraseña</a>
-        </nav>
+        <div class="brand-wrap">
+          <div class="brand">AuxilioSCZ</div>
+          <div class="brand-sub">Panel operativo</div>
+        </div>
+
+        <a class="home-link" routerLink="/inicio" routerLinkActive="active">Inicio</a>
+
+        <section *ngFor="let section of visibleSections" class="menu-section">
+          <button class="section-toggle" (click)="toggleSection(section.key)" [attr.aria-expanded]="isOpen(section.key)">
+            <span>{{ section.title }}</span>
+            <span class="chevron" [class.open]="isOpen(section.key)">▾</span>
+          </button>
+          <nav *ngIf="isOpen(section.key)" class="section-items">
+            <a
+              *ngFor="let item of section.items"
+              [routerLink]="item.path"
+              routerLinkActive="active"
+            >
+              {{ item.label }}
+            </a>
+          </nav>
+        </section>
+
+        <div class="quick-actions">
+          <a routerLink="/auth/recuperar-password" routerLinkActive="active">Recuperar contraseña</a>
+        </div>
+
         <button class="logout" (click)="logout()">Cerrar sesión</button>
       </aside>
 
       <section class="content">
         <header class="topbar">
-          <h1>Panel de Gestión de Emergencias</h1>
+          <div>
+            <h1>Panel de Gestión de Emergencias</h1>
+            
+          </div>
+          <span class="role-pill">{{ role || 'usuario' }}</span>
         </header>
         <main class="panel">
           <router-outlet></router-outlet>
@@ -38,86 +74,263 @@ import { AuthService } from '../features/auth/services/auth.service';
     .layout {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 260px 1fr;
-      background: #f5f4f0;
+      grid-template-columns: 300px 1fr;
+      background: #f4f6fb;
     }
     .sidebar {
-      background: #1f3a7a;
+      background: linear-gradient(180deg, #1f3a7a 0%, #163267 100%);
       color: #fff;
-      padding: 20px 16px;
+      padding: 16px 12px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
+      overflow: auto;
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
     }
+    .brand-wrap { padding: 4px 8px 10px; }
     .brand {
       font-weight: 800;
-      font-size: 24px;
+      font-size: 28px;
+      letter-spacing: 0.2px;
+      line-height: 1;
+    }
+    .brand-sub {
+      margin-top: 6px;
+      color: #cad8ff;
+      font-size: 12px;
       letter-spacing: 0.4px;
+      text-transform: uppercase;
     }
-    nav {
-      display: grid;
-      gap: 6px;
-    }
-    nav a {
+    .home-link {
       color: #dfe8ff;
       text-decoration: none;
       padding: 10px 12px;
+      border-radius: 10px;
+      transition: all .2s ease;
+      font-weight: 600;
+      display: block;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .home-link:hover,
+    .home-link.active {
+      background: rgba(255,255,255,.18);
+      color: #fff;
+    }
+    .menu-section {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .section-toggle {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .section-toggle:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .chevron {
+      transition: transform .2s ease;
+      display: inline-block;
+    }
+    .chevron.open {
+      transform: rotate(180deg);
+    }
+    .section-items {
+      display: grid;
+      gap: 4px;
+      padding: 0 8px 8px;
+    }
+    .section-items a {
+      color: #dfe8ff;
+      text-decoration: none;
+      padding: 8px 10px;
       border-radius: 8px;
       transition: all .2s ease;
-      font-weight: 500;
+      font-size: 13px;
     }
-    nav a:hover,
-    nav a.active {
+    .section-items a:hover,
+    .section-items a.active {
+      background: rgba(255,255,255,.18);
+      color: #fff;
+    }
+    .quick-actions {
+      margin-top: auto;
+      border-top: 1px solid rgba(255,255,255,.16);
+      padding-top: 8px;
+    }
+    .quick-actions a {
+      color: #dfe8ff;
+      text-decoration: none;
+      padding: 9px 12px;
+      border-radius: 8px;
+      display: block;
+    }
+    .quick-actions a:hover,
+    .quick-actions a.active {
       background: rgba(255,255,255,.16);
       color: #fff;
     }
     .logout {
-      margin-top: auto;
-      background: #E24B4A;
+      background: #e24b4a;
       width: 100%;
+      margin-top: 4px;
     }
     .content {
       min-width: 0;
       display: grid;
       grid-template-rows: auto 1fr;
+      background: #f4f6fb;
     }
     .topbar {
       background: #fff;
       border-bottom: 1px solid #e6e8ef;
       padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
     .topbar h1 {
       margin: 0;
       font-size: 22px;
       color: #1f2b45;
+      line-height: 1.2;
+    }
+    .topbar-sub {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: #74819a;
+    }
+    .role-pill {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1f3a7a;
+      background: #dfe8ff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      text-transform: uppercase;
+      align-self: flex-start;
     }
     .panel {
       padding: 20px 24px;
       overflow: auto;
     }
-    @media (max-width: 900px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-      .sidebar {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-      }
-      nav {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: sticky; top: 0; z-index: 10; max-height: 56vh; }
+      .topbar { position: static; }
     }
   `],
 })
 export class DashboardLayoutComponent {
-  role = '';
+  role: UserRole = '';
+  visibleSections: MenuSection[] = [];
+  private readonly openSections = new Set<string>();
+
+  private readonly sections: MenuSection[] = [
+    {
+      key: 'clientes-vehiculos',
+      title: 'Gestión de Clientes y Vehículos',
+      roles: ['cliente', 'conductor', 'admin'],
+      items: [
+        { label: 'Registrar vehículos', path: '/clientes-vehiculos/registrar-vehiculo', roles: ['cliente', 'conductor', 'admin'] },
+        { label: 'Estado de solicitud', path: '/clientes-vehiculos/estado-solicitud', roles: ['cliente', 'conductor', 'admin'] },
+        { label: 'Ubicación del técnico', path: '/clientes-vehiculos/ubicacion-tecnico', roles: ['cliente', 'conductor', 'admin'] },
+      ],
+    },
+    {
+      key: 'talleres-operacion',
+      title: 'Gestión de Talleres y Operación',
+      roles: ['taller', 'tecnico', 'admin'],
+      items: [
+        { label: 'Registrar taller', path: '/talleres-operacion/registrar-taller', roles: ['admin'] },
+        { label: 'Disponibilidad', path: '/talleres-operacion/disponibilidad', roles: ['taller', 'admin'] },
+        { label: 'Técnicos', path: '/talleres-operacion/tecnicos', roles: ['taller', 'admin'] },
+        { label: 'Trabajo completado', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico', 'admin'] },
+      ],
+    },
+    {
+      key: 'registro-emergencias',
+      title: 'Registro de Emergencias',
+      roles: ['cliente', 'conductor', 'taller', 'admin'],
+      items: [
+        { label: 'Reportar emergencia', path: '/registro-emergencias/reportar-emergencia', roles: ['cliente', 'conductor', 'admin'] },
+        { label: 'Cancelar solicitud', path: '/registro-emergencias/cancelar-solicitud', roles: ['cliente', 'conductor', 'admin'] },
+        { label: 'Comunicación y notificaciones', path: '/registro-emergencias/comunicacion-notificaciones', roles: ['taller', 'admin'] },
+      ],
+    },
+    {
+      key: 'atencion-asignacion',
+      title: 'Atención y Asignación de Solicitudes',
+      roles: ['taller', 'admin'],
+      items: [
+        { label: 'Consultar solicitudes', path: '/atencion-solicitudes/consultar-solicitudes', roles: ['taller', 'admin'] },
+        { label: 'Evaluar solicitud', path: '/atencion-solicitudes/evaluar-solicitud', roles: ['taller', 'admin'] },
+        { label: 'Asignar servicio', path: '/atencion-solicitudes/asignar-servicio', roles: ['taller', 'admin'] },
+        { label: 'Actualizar estado', path: '/atencion-solicitudes/actualizar-estado', roles: ['taller', 'admin'] },
+      ],
+    },
+    // Paquete pagos oculto temporalmente (ciclo 3)
+    {
+      key: 'admin-reportes',
+      title: 'Administración y Reportes',
+      roles: ['admin'],
+      items: [
+        { label: 'Roles y permisos', path: '/admin-reportes/roles-permisos', roles: ['admin'] },
+      ],
+    },
+  ];
 
   constructor(
     private readonly authService: AuthService,
     private readonly router: Router,
   ) {
-    this.role = this.authService.getCurrentRole();
+    this.role = (this.authService.getCurrentRole() as UserRole) || '';
+    this.visibleSections = this.buildVisibleSections();
+    for (const s of this.visibleSections) {
+      this.openSections.add(s.key);
+    }
+  }
+
+  isOpen(sectionKey: string): boolean {
+    return this.openSections.has(sectionKey);
+  }
+
+  toggleSection(sectionKey: string): void {
+    if (this.openSections.has(sectionKey)) {
+      this.openSections.delete(sectionKey);
+    } else {
+      this.openSections.add(sectionKey);
+    }
+  }
+
+  private matchesRole(roles: UserRole[]): boolean {
+    if (!this.role) return false;
+    return roles.includes(this.role);
+  }
+
+  private buildVisibleSections(): MenuSection[] {
+    return this.sections
+      .filter((s) => this.matchesRole(s.roles))
+      .map((s) => ({
+        ...s,
+        items: s.items.filter((item) => this.matchesRole(item.roles)),
+      }))
+      .filter((s) => s.items.length > 0);
   }
 
   logout(): void {
