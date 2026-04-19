@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { TallerService } from '../../services/taller.service';
+import { ServicioActivo, TallerService } from '../../services/taller.service';
 
 @Component({
   selector: 'app-trabajo-completado-page',
@@ -11,15 +11,37 @@ import { TallerService } from '../../services/taller.service';
   template: `
     <section class="card">
       <h2>Registrar Trabajo Completado</h2>
+      <p class="muted">Selecciona una solicitud activa y registra el cierre operativo.</p>
+      <p *ngIf="loadingServicios" class="muted">Cargando solicitudes activas...</p>
+
       <form [formGroup]="form" (ngSubmit)="guardar()" class="grid">
-        <label>ID del incidente</label>
-        <input type="text" formControlName="incidenteId" />
+        <label>Solicitud activa</label>
+        <select formControlName="incidenteId">
+          <option value="" disabled>Selecciona una solicitud</option>
+          <option *ngFor="let s of servicios" [value]="s.incidente_id">
+            {{ s.codigo_solicitud }} · {{ s.cliente || 'Cliente' }} · {{ s.tipo_servicio || 'servicio general' }} · {{ s.estado }}
+          </option>
+        </select>
+
         <label>Costo final</label>
         <input type="number" formControlName="costo" />
-        <button type="submit" [disabled]="loading || form.invalid">{{ loading ? 'Guardando...' : 'Marcar como atendido' }}</button>
+
+        <label>Observación final</label>
+        <textarea rows="2" formControlName="observacion"></textarea>
+
+        <label>Evidencia (texto opcional)</label>
+        <textarea rows="2" formControlName="evidenciaTexto"></textarea>
+
+        <button type="submit" [disabled]="loading || form.invalid || !servicios.length">
+          {{ loading ? 'Guardando...' : 'Marcar como completado' }}
+        </button>
       </form>
+
       <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
+      <p *ngIf="!loadingServicios && !servicios.length" class="muted">
+        No hay solicitudes activas para completar.
+      </p>
     </section>
   `,
   styles: [`
@@ -27,16 +49,21 @@ import { TallerService } from '../../services/taller.service';
     .grid { display:grid; gap:8px; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
+    .muted { color:#6d7890; }
   `],
 })
-export class TrabajoCompletadoPageComponent {
+export class TrabajoCompletadoPageComponent implements OnInit {
   loading = false;
+  loadingServicios = false;
   ok = '';
   error = '';
+  servicios: ServicioActivo[] = [];
 
   readonly form = this.fb.nonNullable.group({
     incidenteId: ['', [Validators.required]],
     costo: [0, [Validators.required, Validators.min(1)]],
+    observacion: [''],
+    evidenciaTexto: [''],
   });
 
   constructor(
@@ -44,16 +71,45 @@ export class TrabajoCompletadoPageComponent {
     private readonly tallerService: TallerService,
   ) {}
 
+  ngOnInit(): void {
+    this.cargarServiciosActivos();
+  }
+
+  cargarServiciosActivos(): void {
+    this.loadingServicios = true;
+    this.error = '';
+    this.tallerService.listarServiciosActivos().subscribe({
+      next: (rows) => {
+        this.loadingServicios = false;
+        this.servicios = rows;
+        if (rows.length) {
+          this.form.patchValue({ incidenteId: rows[0].incidente_id });
+        }
+      },
+      error: (err) => {
+        this.loadingServicios = false;
+        this.error = err?.error?.detail ?? 'No se pudo cargar servicios activos';
+      },
+    });
+  }
+
   guardar(): void {
     if (this.form.invalid) return;
     this.loading = true;
     this.ok = '';
     this.error = '';
-    const { incidenteId, costo } = this.form.getRawValue();
-    this.tallerService.actualizarEstadoServicio(incidenteId, 'atendido', Number(costo)).subscribe({
+
+    const { incidenteId, costo, observacion, evidenciaTexto } = this.form.getRawValue();
+    this.tallerService.registrarTrabajoCompletado(
+      incidenteId,
+      Number(costo),
+      observacion || undefined,
+      evidenciaTexto || undefined,
+    ).subscribe({
       next: () => {
         this.loading = false;
         this.ok = 'Trabajo completado registrado';
+        this.cargarServiciosActivos();
       },
       error: (err) => {
         this.loading = false;
@@ -62,4 +118,3 @@ export class TrabajoCompletadoPageComponent {
     });
   }
 }
-
