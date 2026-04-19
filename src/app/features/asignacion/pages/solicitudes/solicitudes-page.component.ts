@@ -12,11 +12,13 @@ import { AsignacionService, SolicitudServicio } from '../../services/asignacion.
       <h2>Solicitudes de Servicio</h2>
       <p *ngIf="error" class="error">{{ error }}</p>
       <table *ngIf="solicitudes.length">
-        <thead><tr><th>ID</th><th>Tipo</th><th>Prioridad</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Código</th><th>Solicitante</th><th>Tipo</th><th>Descripción</th><th>Prioridad</th><th>Estado</th></tr></thead>
         <tbody>
           <tr *ngFor="let s of solicitudes">
-            <td>{{ s.id }}</td>
-            <td>{{ s.tipo }}</td>
+            <td>{{ s.codigo_solicitud || 'SOL' }}</td>
+            <td>{{ s.cliente_nombre || 'Cliente' }}</td>
+            <td>{{ s.tipo || 'incierto' }}</td>
+            <td>{{ s.descripcion || 'Sin descripción' }}</td>
             <td>{{ s.prioridad }}</td>
             <td>{{ s.estado }}</td>
           </tr>
@@ -50,4 +52,3 @@ export class SolicitudesPageComponent implements OnInit {
     });
   }
 }
-
