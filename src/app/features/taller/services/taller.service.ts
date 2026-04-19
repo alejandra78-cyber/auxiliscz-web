@@ -43,6 +43,16 @@ export interface HistorialAtencion {
   pago_estado: string | null;
 }
 
+export interface ServicioActivo {
+  incidente_id: string;
+  codigo_solicitud: string;
+  estado: string;
+  tipo_servicio?: string | null;
+  tecnico_id?: string | null;
+  tecnico_nombre?: string | null;
+  cliente?: string | null;
+}
+
 export interface TallerCreateRequest {
   usuario_id: string;
   nombre: string;
@@ -82,11 +92,28 @@ export class TallerService {
   }
 
   listarSolicitudesPendientes(): Observable<Incidente[]> {
-    return this.http.get<Incidente[]>(`${this.apiBase}/incidentes/talleres/disponibles`);
+    return this.http.get<Incidente[]>(`${this.apiBase}/asignacion/solicitudes`);
   }
 
   actualizarEstadoServicio(incidenteId: string, nuevoEstado: string, costo?: number): Observable<any> {
-    return this.http.patch(`${this.apiBase}/incidentes/${incidenteId}/estado`, { nuevo_estado: nuevoEstado, costo });
+    return this.http.patch(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/estado`, { estado: nuevoEstado, costo });
+  }
+
+  registrarTrabajoCompletado(
+    incidenteId: string,
+    costo: number,
+    observacion?: string,
+    evidenciaTexto?: string,
+  ): Observable<any> {
+    return this.http.patch(`${this.apiBase}/taller/mi-taller/servicios/${incidenteId}/completar`, {
+      costo,
+      observacion,
+      evidencia_texto: evidenciaTexto,
+    });
+  }
+
+  listarServiciosActivos(): Observable<ServicioActivo[]> {
+    return this.http.get<ServicioActivo[]>(`${this.apiBase}/taller/mi-taller/servicios/activos`);
   }
 
   obtenerHistorialAtenciones(): Observable<HistorialAtencion[]> {
