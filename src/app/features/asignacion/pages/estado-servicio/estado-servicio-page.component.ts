@@ -10,19 +10,31 @@ import { AsignacionService } from '../../services/asignacion.service';
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <section class="card">
-      <h2>Evaluar / Asignar / Actualizar Estado</h2>
+      <h2>Gestión de Solicitud de Servicio</h2>
+      <p class="hint">Flujo recomendado: evaluar solicitud, asignar técnico y luego actualizar estado a en_proceso o cancelada.</p>
       <form [formGroup]="form" (ngSubmit)="guardar()" class="grid">
         <label>ID incidente</label>
         <input type="text" formControlName="incidenteId" />
+        <label>Acción</label>
+        <select formControlName="accion">
+          <option value="evaluar_aprobar">Evaluar solicitud (aprobar)</option>
+          <option value="evaluar_rechazar">Evaluar solicitud (rechazar)</option>
+          <option value="asignar">Asignar técnico/servicio</option>
+          <option value="estado">Actualizar estado operativo</option>
+        </select>
+        <label>Observación (evaluación)</label>
+        <input type="text" formControlName="observacion" />
+        <label>ID técnico (asignar)</label>
+        <input type="text" formControlName="tecnicoId" />
         <label>Nuevo estado</label>
         <select formControlName="estado">
           <option value="en_proceso">en_proceso</option>
-          <option value="atendido">atendido</option>
-          <option value="cancelado">cancelado</option>
+          <option value="cancelada">cancelada</option>
         </select>
         <label>Costo (solo si atendido)</label>
         <input type="number" formControlName="costo" />
-        <button type="submit" [disabled]="form.invalid || loading">{{ loading ? 'Guardando...' : 'Actualizar' }}</button>
+        <small class="hint">Nota: el cierre en <b>completada</b> se realiza en la vista "Trabajo completado".</small>
+        <button type="submit" [disabled]="form.invalid || loading">{{ loading ? 'Guardando...' : 'Ejecutar' }}</button>
       </form>
       <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
@@ -31,6 +43,7 @@ import { AsignacionService } from '../../services/asignacion.service';
   styles: [`
     .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
     .grid { display:grid; gap:8px; }
+    .hint { color:#6d7890; margin: 0 0 8px 0; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
   `],
@@ -42,6 +55,9 @@ export class EstadoServicioPageComponent {
 
   readonly form = this.fb.nonNullable.group({
     incidenteId: ['', [Validators.required]],
+    accion: ['estado', [Validators.required]],
+    observacion: [''],
+    tecnicoId: [''],
     estado: ['en_proceso', [Validators.required]],
     costo: [0],
   });
@@ -58,16 +74,39 @@ export class EstadoServicioPageComponent {
     this.error = '';
     const raw = this.form.getRawValue();
     const costo = Number(raw.costo) > 0 ? Number(raw.costo) : undefined;
-    this.asignacionService.actualizarEstado(raw.incidenteId, raw.estado, costo).subscribe({
-      next: () => {
-        this.loading = false;
-        this.ok = 'Estado actualizado correctamente';
-      },
-      error: (err) => {
-        this.loading = false;
-        this.error = err?.error?.detail ?? 'No se pudo actualizar estado';
-      },
+    const done = (msg: string) => {
+      this.loading = false;
+      this.ok = msg;
+    };
+    const fail = (err: any) => {
+      this.loading = false;
+      this.error = err?.error?.detail ?? 'No se pudo ejecutar acción';
+    };
+
+    if (raw.accion === 'evaluar_aprobar') {
+      this.asignacionService.evaluarSolicitud(raw.incidenteId, true, raw.observacion || undefined).subscribe({
+        next: () => done('Solicitud evaluada y aprobada'),
+        error: fail,
+      });
+      return;
+    }
+    if (raw.accion === 'evaluar_rechazar') {
+      this.asignacionService.evaluarSolicitud(raw.incidenteId, false, raw.observacion || undefined).subscribe({
+        next: () => done('Solicitud evaluada y rechazada'),
+        error: fail,
+      });
+      return;
+    }
+    if (raw.accion === 'asignar') {
+      this.asignacionService.asignarServicio(raw.incidenteId, raw.tecnicoId || '', 'otro', raw.observacion || undefined).subscribe({
+        next: () => done('Servicio asignado'),
+        error: fail,
+      });
+      return;
+    }
+    this.asignacionService.actualizarEstado(raw.incidenteId, raw.estado, costo, raw.observacion || undefined).subscribe({
+      next: () => done('Estado actualizado correctamente'),
+      error: fail,
     });
   }
 }
-
