@@ -18,7 +18,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   telefono?: string;
-  rol?: 'conductor' | 'taller' | 'admin';
+  rol?: 'conductor' | 'taller' | 'tecnico' | 'admin';
 }
 
 export interface UserOut {
@@ -26,7 +26,7 @@ export interface UserOut {
   nombre: string;
   email: string;
   telefono?: string | null;
-  rol: 'conductor' | 'taller' | 'admin';
+  rol: 'conductor' | 'taller' | 'tecnico' | 'admin';
   creado_en?: string;
 }
 
@@ -37,7 +37,7 @@ export interface RolePermissionsResponse {
 
 export interface ChangeRoleRequest {
   usuario_id: string;
-  nuevo_rol: 'conductor' | 'taller' | 'admin';
+  nuevo_rol: 'conductor' | 'taller' | 'tecnico' | 'admin';
 }
 
 export interface AdminUserListItem {
@@ -45,7 +45,7 @@ export interface AdminUserListItem {
   nombre: string;
   email: string;
   telefono?: string | null;
-  rol: 'conductor' | 'taller' | 'admin';
+  rol: 'conductor' | 'taller' | 'tecnico' | 'admin';
 }
 
 export interface RecoverPasswordRequest {

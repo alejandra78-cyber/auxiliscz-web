@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { Tecnico, TallerService } from '../../services/taller.service';
+import { Tecnico, TecnicoCandidato, TallerService } from '../../services/taller.service';
 
 @Component({
   selector: 'app-tecnicos-page',
@@ -13,20 +13,27 @@ import { Tecnico, TallerService } from '../../services/taller.service';
       <h2>Gestionar Técnicos</h2>
 
       <form [formGroup]="form" (ngSubmit)="registrar()" class="row">
-        <input type="text" formControlName="nombre" placeholder="Nombre del técnico" />
+        <select formControlName="usuarioId">
+          <option value="" disabled>Selecciona un usuario con rol técnico</option>
+          <option *ngFor="let c of candidatos" [value]="c.id">
+            {{ c.nombre }} ({{ c.email }})
+          </option>
+        </select>
         <button type="submit" [disabled]="form.invalid || loading">{{ loading ? 'Guardando...' : 'Registrar técnico' }}</button>
       </form>
+      <p class="muted" *ngIf="!candidatos.length && !loading">No hay usuarios con rol técnico disponibles para vincular.</p>
 
       <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
 
       <table *ngIf="tecnicos.length">
         <thead>
-          <tr><th>Nombre</th><th>Estado</th></tr>
+          <tr><th>Nombre</th><th>Email</th><th>Estado</th></tr>
         </thead>
         <tbody>
           <tr *ngFor="let t of tecnicos">
             <td>{{ t.nombre }}</td>
+            <td>{{ t.email || '-' }}</td>
             <td>{{ t.disponible ? 'Disponible' : 'No disponible' }}</td>
           </tr>
         </tbody>
@@ -47,12 +54,13 @@ import { Tecnico, TallerService } from '../../services/taller.service';
 })
 export class TecnicosPageComponent implements OnInit {
   tecnicos: Tecnico[] = [];
+  candidatos: TecnicoCandidato[] = [];
   loading = false;
   ok = '';
   error = '';
 
   readonly form = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required, Validators.minLength(3)]],
+    usuarioId: ['', [Validators.required]],
   });
 
   constructor(
@@ -75,6 +83,14 @@ export class TecnicosPageComponent implements OnInit {
         this.error = err?.error?.detail ?? 'No se pudo cargar técnicos';
       },
     });
+    this.tallerService.listarCandidatosTecnico().subscribe({
+      next: (res) => {
+        this.candidatos = res ?? [];
+      },
+      error: () => {
+        this.candidatos = [];
+      },
+    });
   }
 
   registrar(): void {
@@ -83,7 +99,7 @@ export class TecnicosPageComponent implements OnInit {
     this.ok = '';
     this.error = '';
 
-    this.tallerService.registrarTecnico(this.form.getRawValue().nombre).subscribe({
+    this.tallerService.registrarTecnico(this.form.getRawValue().usuarioId).subscribe({
       next: () => {
         this.loading = false;
         this.ok = 'Técnico registrado correctamente';
@@ -97,4 +113,3 @@ export class TecnicosPageComponent implements OnInit {
     });
   }
 }
-

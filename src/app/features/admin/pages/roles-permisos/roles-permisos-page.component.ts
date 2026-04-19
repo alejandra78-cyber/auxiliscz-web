@@ -17,6 +17,7 @@ import { AdminUserListItem, AuthService } from '../../../auth/services/auth.serv
         <select formControlName="rol">
           <option value="conductor">conductor</option>
           <option value="taller">taller</option>
+          <option value="tecnico">tecnico</option>
           <option value="admin">admin</option>
         </select>
         <button type="submit" [disabled]="consultaForm.invalid || loadingConsulta">{{ loadingConsulta ? 'Consultando...' : 'Consultar permisos' }}</button>
@@ -59,6 +60,7 @@ import { AdminUserListItem, AuthService } from '../../../auth/services/auth.serv
         <select formControlName="nuevo_rol">
           <option value="conductor">conductor</option>
           <option value="taller">taller</option>
+          <option value="tecnico">tecnico</option>
           <option value="admin">admin</option>
         </select>
 
@@ -155,7 +157,7 @@ export class RolesPermisosPageComponent implements OnInit {
     const raw = this.cambioForm.getRawValue();
     this.authService.changeRole({
       usuario_id: raw.usuario_id,
-      nuevo_rol: raw.nuevo_rol as 'conductor' | 'taller' | 'admin',
+      nuevo_rol: raw.nuevo_rol as 'conductor' | 'taller' | 'tecnico' | 'admin',
     }).subscribe({
       next: (res) => {
         this.loadingCambio = false;

@@ -6,8 +6,16 @@ import { environment } from '../../../../environments/environment';
 
 export interface Tecnico {
   id: string;
+  usuario_id?: string | null;
+  email?: string | null;
   nombre: string;
   disponible: boolean;
+}
+
+export interface TecnicoCandidato {
+  id: string;
+  nombre: string;
+  email: string;
 }
 
 export interface Taller {
@@ -87,8 +95,15 @@ export class TallerService {
     return this.http.get<Tecnico[]>(`${this.apiBase}/taller/mi-taller/tecnicos`);
   }
 
-  registrarTecnico(nombre: string, disponible = true): Observable<Tecnico> {
-    return this.http.post<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos`, { nombre, disponible });
+  listarCandidatosTecnico(): Observable<TecnicoCandidato[]> {
+    return this.http.get<TecnicoCandidato[]>(`${this.apiBase}/taller/mi-taller/tecnicos/candidatos`);
+  }
+
+  registrarTecnico(usuarioId: string, disponible = true): Observable<Tecnico> {
+    return this.http.post<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos`, {
+      usuario_id: usuarioId,
+      disponible,
+    });
   }
 
   listarSolicitudesPendientes(): Observable<Incidente[]> {
