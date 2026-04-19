@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -15,13 +15,26 @@ import { AuthService } from '../../services/auth.service';
         <h1>AuxilioSCZ</h1>
         <p>Inicia sesión para acceder al panel</p>
 
-        <form [formGroup]="form" (ngSubmit)="submit()">
+        <form [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
           <label for="email">Email</label>
-          <input id="email" type="email" formControlName="email" />
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
 
           <label for="password">Contraseña</label>
           <div class="password-field">
-            <input id="password" [type]="showLoginPassword ? 'text' : 'password'" formControlName="password" />
+            <input
+              id="password"
+              [type]="showLoginPassword ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+            />
             <button type="button" class="pass-toggle" (click)="showLoginPassword = !showLoginPassword">
               {{ showLoginPassword ? 'Ocultar' : 'Mostrar' }}
             </button>
@@ -161,7 +174,7 @@ import { AuthService } from '../../services/auth.service';
     }
   `],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   loading = false;
   registerLoading = false;
   error = '';
@@ -179,6 +192,10 @@ export class LoginComponent {
     private readonly authService: AuthService,
     private readonly router: Router,
   ) {}
+
+  ngOnInit(): void {
+    this.form.reset({ email: '', password: '' });
+  }
 
   private createLoginForm() {
     return this.fb.nonNullable.group({
@@ -204,7 +221,7 @@ export class LoginComponent {
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/inicio']);
       },
       error: (err) => {
         this.loading = false;
