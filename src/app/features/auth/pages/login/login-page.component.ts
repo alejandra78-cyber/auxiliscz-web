@@ -44,41 +44,12 @@ import { AuthService } from '../../services/auth.service';
             {{ loading ? 'Ingresando...' : 'Iniciar sesión' }}
           </button>
         </form>
-        <a routerLink="/recover-password">Recuperar contraseña</a>
-        <button type="button" class="link-btn" (click)="toggleRegister()">
-          {{ showRegister ? 'Ocultar registro' : 'Crear usuario' }}
-        </button>
+        <div class="links-row">
+          <a routerLink="/recover-password">Recuperar contraseña</a>
+          <a routerLink="/registrar-taller" class="register-link">Registrar Taller</a>
+        </div>
 
         <p class="error" *ngIf="error">{{ error }}</p>
-
-        <section *ngIf="showRegister" class="register-box">
-          <h3>Crear usuario</h3>
-          <form [formGroup]="registerForm" (ngSubmit)="submitRegister()">
-            <label>Nombre</label>
-            <input type="text" formControlName="nombre" />
-
-            <label>Email</label>
-            <input type="email" formControlName="email" />
-
-            <label>Contraseña</label>
-            <div class="password-field">
-              <input [type]="showRegisterPassword ? 'text' : 'password'" formControlName="password" />
-              <button type="button" class="pass-toggle" (click)="showRegisterPassword = !showRegisterPassword">
-                {{ showRegisterPassword ? 'Ocultar' : 'Mostrar' }}
-              </button>
-            </div>
-
-            <label>Teléfono</label>
-            <input type="text" formControlName="telefono" />
-
-            <button type="submit" [disabled]="registerLoading || registerForm.invalid">
-              {{ registerLoading ? 'Creando...' : 'Crear usuario' }}
-            </button>
-          </form>
-
-          <p class="ok" *ngIf="registerOk">{{ registerOk }}</p>
-          <p class="error" *ngIf="registerError">{{ registerError }}</p>
-        </section>
       </div>
     </div>
   `,
@@ -143,30 +114,22 @@ import { AuthService } from '../../services/auth.service';
     button:hover {
       background: #163267;
     }
-    .link-btn {
+    .links-row {
       margin-top: 10px;
-      width: 100%;
-      background: #edf2ff;
-      color: #1f3a7a;
-      border: 1px solid #d5def5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .register-box {
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid #e5e9f3;
+    .register-link {
+      color: #0f2f6b;
+      text-decoration: none;
+      font-weight: 600;
     }
-    .register-box h3 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      color: #1f2b45;
-    }
-    .register-box form {
-      display: grid;
-      gap: 8px;
-    }
-    .ok {
-      color: #027a48;
-      margin-top: 8px;
+    .register-link:hover {
+      color: #0a2452;
+      text-decoration: underline;
     }
     .error {
       color: #b42318;
@@ -176,16 +139,10 @@ import { AuthService } from '../../services/auth.service';
 })
 export class LoginComponent implements OnInit {
   loading = false;
-  registerLoading = false;
   error = '';
-  registerError = '';
-  registerOk = '';
-  showRegister = false;
   showLoginPassword = false;
-  showRegisterPassword = false;
 
   readonly form = this.createLoginForm();
-  readonly registerForm = this.createRegisterForm();
 
   constructor(
     private readonly fb: FormBuilder,
@@ -204,15 +161,6 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  private createRegisterForm() {
-    return this.fb.nonNullable.group({
-      nombre: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      telefono: [''],
-    });
-  }
-
   submit(): void {
     if (this.form.invalid) return;
     this.loading = true;
@@ -226,38 +174,6 @@ export class LoginComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         this.error = err?.error?.detail ?? 'No se pudo iniciar sesión';
-      },
-    });
-  }
-
-  toggleRegister(): void {
-    this.showRegister = !this.showRegister;
-    this.registerError = '';
-    this.registerOk = '';
-  }
-
-  submitRegister(): void {
-    if (this.registerForm.invalid) return;
-    this.registerLoading = true;
-    this.registerError = '';
-    this.registerOk = '';
-
-    const raw = this.registerForm.getRawValue();
-    this.authService.register({
-      nombre: raw.nombre,
-      email: raw.email,
-      password: raw.password,
-      telefono: raw.telefono || undefined,
-    }).subscribe({
-      next: () => {
-        this.registerLoading = false;
-        this.registerOk = 'Usuario creado".';
-        this.registerForm.patchValue({ password: '' });
-      },
-      error: (err) => {
-        this.registerLoading = false;
-        const detail = err?.error?.detail;
-        this.registerError = Array.isArray(detail) ? (detail[0]?.msg ?? 'No se pudo crear usuario') : (detail ?? 'No se pudo crear usuario');
       },
     });
   }

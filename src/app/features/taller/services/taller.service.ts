@@ -20,6 +20,7 @@ export interface TecnicoCandidato {
 
 export interface Taller {
   id: string;
+  usuario_id: string;
   nombre: string;
   direccion?: string | null;
   latitud?: number | null;
@@ -27,6 +28,12 @@ export interface Taller {
   disponible: boolean;
   servicios: string[];
   calificacion?: number;
+  estado_aprobacion: 'pendiente' | 'aprobado' | 'rechazado';
+  aprobado_por?: string | null;
+  aprobado_en?: string | null;
+  responsable_nombre?: string | null;
+  responsable_email?: string | null;
+  responsable_telefono?: string | null;
 }
 
 export interface Incidente {
@@ -62,13 +69,49 @@ export interface ServicioActivo {
 }
 
 export interface TallerCreateRequest {
-  usuario_id: string;
+  usuario_id?: string;
   nombre: string;
   direccion?: string;
   latitud?: number;
   longitud?: number;
   servicios: string[];
   disponible: boolean;
+  responsable_nombre?: string;
+  responsable_email?: string;
+  responsable_telefono?: string;
+  password_temporal?: string;
+}
+
+export interface SolicitudAfiliacionRequest {
+  nombre_taller: string;
+  responsable_nombre: string;
+  responsable_email: string;
+  responsable_telefono: string;
+  direccion?: string;
+  latitud?: number;
+  longitud?: number;
+  servicios: string[];
+  descripcion?: string;
+}
+
+export interface SolicitudAfiliacion {
+  id: string;
+  nombre_taller: string;
+  responsable_nombre: string;
+  responsable_email: string;
+  responsable_telefono: string;
+  direccion?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  servicios: string[];
+  descripcion?: string | null;
+  estado: 'pendiente' | 'aprobado' | 'rechazado';
+  observaciones?: string | null;
+  creado_en: string;
+  revisado_en?: string | null;
+  revisado_por?: string | null;
+  usuario_id?: string | null;
+  taller_id?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -85,6 +128,40 @@ export class TallerService {
 
   registrarTaller(payload: TallerCreateRequest): Observable<Taller> {
     return this.http.post<Taller>(`${this.apiBase}/taller/`, payload);
+  }
+
+  registrarSolicitudAfiliacion(payload: SolicitudAfiliacionRequest): Observable<SolicitudAfiliacion> {
+    return this.http.post<SolicitudAfiliacion>(`${this.apiBase}/taller/solicitudes-afiliacion`, payload);
+  }
+
+  listarSolicitudesAfiliacionAdmin(estado?: 'pendiente' | 'aprobado' | 'rechazado'): Observable<SolicitudAfiliacion[]> {
+    const qs = estado ? `?estado=${estado}` : '';
+    return this.http.get<SolicitudAfiliacion[]>(`${this.apiBase}/taller/admin/solicitudes-afiliacion${qs}`);
+  }
+
+  detalleSolicitudAfiliacionAdmin(id: string): Observable<SolicitudAfiliacion> {
+    return this.http.get<SolicitudAfiliacion>(`${this.apiBase}/taller/admin/solicitudes-afiliacion/${id}`);
+  }
+
+  aprobarSolicitudAfiliacion(id: string, observaciones?: string): Observable<SolicitudAfiliacion> {
+    return this.http.patch<SolicitudAfiliacion>(`${this.apiBase}/taller/admin/solicitudes-afiliacion/${id}/aprobar`, { observaciones });
+  }
+
+  rechazarSolicitudAfiliacion(id: string, observaciones?: string): Observable<SolicitudAfiliacion> {
+    return this.http.patch<SolicitudAfiliacion>(`${this.apiBase}/taller/admin/solicitudes-afiliacion/${id}/rechazar`, { observaciones });
+  }
+
+  listarOnboardingTalleres(estado?: 'pendiente' | 'aprobado' | 'rechazado'): Observable<Taller[]> {
+    const qs = estado ? `?estado=${estado}` : '';
+    return this.http.get<Taller[]>(`${this.apiBase}/taller/admin/onboarding${qs}`);
+  }
+
+  aprobarTaller(tallerId: string, comentario?: string): Observable<any> {
+    return this.http.patch(`${this.apiBase}/taller/admin/${tallerId}/aprobar`, { comentario });
+  }
+
+  rechazarTaller(tallerId: string, comentario?: string): Observable<any> {
+    return this.http.patch(`${this.apiBase}/taller/admin/${tallerId}/rechazar`, { comentario });
   }
 
   cambiarDisponibilidad(disponible: boolean): Observable<Taller> {

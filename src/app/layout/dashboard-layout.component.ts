@@ -257,7 +257,6 @@ export class DashboardLayoutComponent {
       title: 'Gestión de Talleres y Operación',
       roles: ['taller', 'tecnico', 'admin'],
       items: [
-        { label: 'Registrar taller', path: '/talleres-operacion/registrar-taller', roles: ['admin'] },
         { label: 'Disponibilidad', path: '/talleres-operacion/disponibilidad', roles: ['taller', 'admin'] },
         { label: 'Técnicos', path: '/talleres-operacion/tecnicos', roles: ['taller', 'admin'] },
         { label: 'Trabajo completado', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico', 'admin'] },
@@ -290,6 +289,7 @@ export class DashboardLayoutComponent {
       title: 'Administración y Reportes',
       roles: ['admin'],
       items: [
+        { label: 'Aprobar talleres', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
         { label: 'Roles y permisos', path: '/admin-reportes/roles-permisos', roles: ['admin'] },
       ],
     },

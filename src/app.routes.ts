@@ -8,7 +8,6 @@ import { RecoverPasswordPageComponent } from './app/features/auth/pages/recover-
 import { RolesPermisosPageComponent } from './app/features/admin/pages/roles-permisos/roles-permisos-page.component';
 import { InicioPageComponent } from './app/features/admin/pages/inicio/inicio-page.component';
 import { DisponibilidadPageComponent } from './app/features/taller/pages/disponibilidad/disponibilidad-page.component';
-import { RegistrarTallerPageComponent } from './app/features/taller/pages/registrar-taller/registrar-taller-page.component';
 import { TecnicosPageComponent } from './app/features/taller/pages/tecnicos/tecnicos-page.component';
 import { DesempenoPageComponent } from './app/features/taller/pages/desempeno/desempeno-page.component';
 import { TrabajoCompletadoPageComponent } from './app/features/taller/pages/trabajo-completado/trabajo-completado-page.component';
@@ -18,10 +17,14 @@ import { AsignarServicioPageComponent } from './app/features/asignacion/pages/as
 import { ActualizarEstadoPageComponent } from './app/features/asignacion/pages/actualizar-estado/actualizar-estado-page.component';
 import { ComunicacionPageComponent } from './app/features/emergencia/pages/comunicacion/comunicacion-page.component';
 import { PackagePlaceholderPageComponent } from './app/shared/pages/package-placeholder-page.component';
+import { AprobarTalleresPageComponent } from './app/features/admin/pages/aprobar-talleres/aprobar-talleres-page.component';
+import { RegistrarTallerPageComponent } from './app/features/taller/pages/registrar-taller/registrar-taller-page.component';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  { path: 'registrar-taller', component: RegistrarTallerPageComponent },
+  { path: 'solicitar-afiliacion-taller', redirectTo: 'registrar-taller', pathMatch: 'full' },
   { path: 'recover-password', component: RecoverPasswordPageComponent },
   { path: 'auth/recuperar-password', component: RecoverPasswordPageComponent },
   {
@@ -64,11 +67,7 @@ export const appRoutes: Routes = [
       },
 
       // Gestión de Talleres y Operación
-      {
-        path: 'talleres-operacion/registrar-taller',
-        component: RegistrarTallerPageComponent,
-        canActivate: [roleGuard(['admin'])],
-      },
+      { path: 'talleres-operacion/registrar-taller', redirectTo: 'admin-reportes/aprobar-talleres', pathMatch: 'full' },
       {
         path: 'talleres-operacion/disponibilidad',
         component: DisponibilidadPageComponent,
@@ -165,9 +164,8 @@ export const appRoutes: Routes = [
       },
       {
         path: 'admin-reportes/aprobar-talleres',
-        component: PackagePlaceholderPageComponent,
+        component: AprobarTalleresPageComponent,
         canActivate: [roleGuard(['admin'])],
-        data: { title: 'CU27 · Aprobar talleres', description: 'Paquete: Administración y Reportes' },
       },
       {
         path: 'admin-reportes/reportes-metricas',
