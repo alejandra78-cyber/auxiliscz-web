@@ -23,7 +23,7 @@ import { AuthService } from '../../services/auth.service';
         Se enviará un enlace seguro al correo si la cuenta existe.
       </p>
 
-      <form [formGroup]="requestForm" (ngSubmit)="requestToken()" class="form-block" *ngIf="!activationMode">
+      <form [formGroup]="requestForm" (ngSubmit)="requestToken()" class="form-block" *ngIf="!activationMode && !tokenPresenteEnUrl">
         <label>Email</label>
         <input type="email" formControlName="email" />
         <button type="submit" [disabled]="loadingRequest || requestForm.invalid">
@@ -42,6 +42,9 @@ import { AuthService } from '../../services/auth.service';
             {{ showNewPassword ? 'Ocultar' : 'Mostrar' }}
           </button>
         </div>
+
+        <label>Confirmar nueva contraseña</label>
+        <input [type]="showNewPassword ? 'text' : 'password'" formControlName="nueva_password_confirmacion" />
 
         <button type="submit" [disabled]="loadingReset || resetForm.invalid">
           {{ loadingReset ? 'Restableciendo...' : 'Restablecer contraseña' }}
@@ -143,6 +146,27 @@ import { AuthService } from '../../services/auth.service';
       margin: 0 0 12px;
       line-height:1.35;
     }
+    @media (max-width: 640px) {
+      .card {
+        padding: 14px;
+        border-radius: 12px;
+      }
+      .header-row {
+        align-items: flex-start;
+      }
+      .password-field {
+        flex-direction: column;
+      }
+      .pass-toggle {
+        width: 100%;
+      }
+      .badge {
+        font-size: 11px;
+      }
+      h2 {
+        font-size: 28px;
+      }
+    }
   `],
 })
 export class RecoverPasswordPageComponent implements OnInit {
@@ -158,6 +182,7 @@ export class RecoverPasswordPageComponent implements OnInit {
   activationMode = false;
   tokenValido = false;
   tokenEvaluado = false;
+  tokenPresenteEnUrl = false;
 
   readonly requestForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -166,6 +191,7 @@ export class RecoverPasswordPageComponent implements OnInit {
   readonly resetForm = this.fb.nonNullable.group({
     reset_token: ['', [Validators.required]],
     nueva_password: ['', [Validators.required, Validators.minLength(6)]],
+    nueva_password_confirmacion: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   constructor(
@@ -183,6 +209,7 @@ export class RecoverPasswordPageComponent implements OnInit {
       this.activationMode = true;
     }
     if (token) {
+      this.tokenPresenteEnUrl = true;
       this.resetForm.patchValue({ reset_token: token });
       this.validarToken(token);
     }
@@ -226,15 +253,26 @@ export class RecoverPasswordPageComponent implements OnInit {
 
   resetPassword(): void {
     if (this.resetForm.invalid) return;
+    const raw = this.resetForm.getRawValue();
+    const pass = raw.nueva_password.trim();
+    const confirm = raw.nueva_password_confirmacion.trim();
+    if (pass !== confirm) {
+      this.resetError = 'La confirmación de contraseña no coincide';
+      return;
+    }
     this.loadingReset = true;
     this.resetMessage = '';
     this.resetError = '';
 
-    this.authService.resetPassword(this.resetForm.getRawValue()).subscribe({
+    this.authService.resetPassword({
+      reset_token: raw.reset_token,
+      nueva_password: pass,
+    }).subscribe({
       next: (res) => {
         this.loadingReset = false;
         this.resetMessage = res.mensaje;
         this.resetForm.reset();
+        this.tokenValido = false;
       },
       error: (err) => {
         this.loadingReset = false;

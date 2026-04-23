@@ -48,12 +48,16 @@ import { AsignacionService, SolicitudServicio } from '../../services/asignacion.
     </section>
   `,
   styles: [`
-    .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
+    .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; min-width: 0; }
     .grid { display:grid; gap:8px; }
     .muted { color:#6d7890; margin:0 0 10px 0; }
     .ia-box { background:#f8fafc; border:1px solid #e2e6ef; border-radius:10px; padding:10px; margin-top:2px; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
+    @media (max-width: 900px) {
+      .card { padding: 12px; }
+      .grid button { width: 100%; }
+    }
   `],
 })
 export class EvaluarSolicitudPageComponent implements OnInit {

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 
@@ -135,6 +135,27 @@ import { AuthService } from '../../services/auth.service';
       color: #b42318;
       margin-top: 12px;
     }
+    @media (max-width: 600px) {
+      .login-shell {
+        padding: 12px;
+      }
+      .login-card {
+        padding: 16px;
+        border-radius: 12px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      .password-field {
+        flex-direction: column;
+      }
+      .pass-toggle {
+        width: 100%;
+      }
+      .links-row {
+        justify-content: space-between;
+      }
+    }
   `],
 })
 export class LoginComponent implements OnInit {
@@ -148,9 +169,35 @@ export class LoginComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    let resetToken = qp.get('reset_token');
+    let mode = qp.get('mode');
+
+    // Fallback robusto para enlaces de correo que alteran query params.
+    if (!resetToken) {
+      const href = window.location.href;
+      const tokenMatch = href.match(/[?&]reset_token=([^&#\s]+)/i);
+      const modeMatch = href.match(/[?&]mode=([^&#\s]+)/i);
+      if (tokenMatch?.[1]) {
+        resetToken = decodeURIComponent(tokenMatch[1]);
+      }
+      if (modeMatch?.[1]) {
+        mode = decodeURIComponent(modeMatch[1]);
+      }
+    }
+
+    if (resetToken) {
+      const query = new URLSearchParams();
+      query.set('reset_token', resetToken);
+      if (mode) query.set('mode', mode);
+      // Usamos redirección dura para evitar quedarse en /login por estados de router/cache.
+      window.location.replace(`/recover-password?${query.toString()}`);
+      return;
+    }
     this.form.reset({ email: '', password: '' });
   }
 

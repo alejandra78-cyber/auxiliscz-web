@@ -26,30 +26,38 @@ import { Tecnico, TecnicoCandidato, TallerService } from '../../services/taller.
       <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
 
-      <table *ngIf="tecnicos.length">
-        <thead>
-          <tr><th>Nombre</th><th>Email</th><th>Estado</th></tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let t of tecnicos">
-            <td>{{ t.nombre }}</td>
-            <td>{{ t.email || '-' }}</td>
-            <td>{{ t.disponible ? 'Disponible' : 'No disponible' }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-wrap" *ngIf="tecnicos.length">
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Email</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of tecnicos">
+              <td>{{ t.nombre }}</td>
+              <td>{{ t.email || '-' }}</td>
+              <td>{{ t.disponible ? 'Disponible' : 'No disponible' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <p *ngIf="!tecnicos.length && !loading" class="muted">Aún no hay técnicos registrados.</p>
     </section>
   `,
   styles: [`
-    .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
+    .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; min-width: 0; }
     .row { display:flex; gap:8px; margin-bottom:12px; }
-    .row input { flex:1; }
+    .row select { flex:1; min-width: 0; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
     .muted { color:#6d7890; }
-    table { width:100%; border-collapse: collapse; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width:100%; min-width: 520px; border-collapse: collapse; }
     th, td { border-bottom:1px solid #eef1f6; padding:8px; text-align:left; }
+    @media (max-width: 900px) {
+      .card { padding: 12px; }
+      .row { flex-direction: column; }
+      .row button { width: 100%; }
+    }
   `],
 })
 export class TecnicosPageComponent implements OnInit {

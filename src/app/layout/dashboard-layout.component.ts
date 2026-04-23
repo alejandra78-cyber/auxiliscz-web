@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../features/auth/services/auth.service';
@@ -25,13 +25,13 @@ interface MenuSection {
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div class="layout">
-      <aside class="sidebar">
+      <aside class="sidebar" [class.mobile-open]="mobileMenuOpen">
         <div class="brand-wrap">
           <div class="brand">AuxilioSCZ</div>
           <div class="brand-sub">Panel operativo</div>
         </div>
 
-        <a class="home-link" routerLink="/inicio" routerLinkActive="active">Inicio</a>
+        <a class="home-link" routerLink="/inicio" routerLinkActive="active" (click)="onMenuItemClick()">Inicio</a>
 
         <section *ngFor="let section of visibleSections" class="menu-section">
           <button class="section-toggle" (click)="toggleSection(section.key)" [attr.aria-expanded]="isOpen(section.key)">
@@ -43,6 +43,7 @@ interface MenuSection {
               *ngFor="let item of section.items"
               [routerLink]="item.path"
               routerLinkActive="active"
+              (click)="onMenuItemClick()"
             >
               {{ item.label }}
             </a>
@@ -50,17 +51,30 @@ interface MenuSection {
         </section>
 
         <div class="quick-actions">
-          <a routerLink="/auth/recuperar-password" routerLinkActive="active">Recuperar contraseña</a>
+          <a routerLink="/auth/recuperar-password" routerLinkActive="active" (click)="onMenuItemClick()">Recuperar contraseña</a>
         </div>
 
         <button class="logout" (click)="logout()">Cerrar sesión</button>
       </aside>
+      <button
+        class="mobile-overlay"
+        *ngIf="mobileMenuOpen"
+        aria-label="Cerrar menú"
+        (click)="closeMobileMenu()"
+      ></button>
 
       <section class="content">
         <header class="topbar">
-          <div>
+          <div class="top-left">
+            <button
+              type="button"
+              class="menu-btn"
+              aria-label="Abrir menú"
+              (click)="toggleMobileMenu()"
+            >
+              ☰
+            </button>
             <h1>Panel de Gestión de Emergencias</h1>
-            
           </div>
           <span class="role-pill">{{ role || 'usuario' }}</span>
         </header>
@@ -76,6 +90,7 @@ interface MenuSection {
       display: grid;
       grid-template-columns: 300px 1fr;
       background: #f4f6fb;
+      position: relative;
     }
     .sidebar {
       background: linear-gradient(180deg, #1f3a7a 0%, #163267 100%);
@@ -204,6 +219,32 @@ interface MenuSection {
       top: 0;
       z-index: 5;
     }
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .menu-btn {
+      display: none;
+      background: #eef3ff;
+      color: #1f3a7a;
+      border: 1px solid #d6e0fa;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 39;
+      background: rgba(9, 18, 33, 0.35);
+      border: none;
+      border-radius: 0;
+      padding: 0;
+    }
     .topbar h1 {
       margin: 0;
       font-size: 22px;
@@ -229,16 +270,67 @@ interface MenuSection {
       padding: 20px 24px;
       overflow: auto;
     }
+    @media (max-width: 1200px) {
+      .layout { grid-template-columns: 260px 1fr; }
+      .panel { padding: 16px; }
+      .topbar h1 { font-size: 20px; }
+    }
     @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
-      .sidebar { position: sticky; top: 0; z-index: 10; max-height: 56vh; }
-      .topbar { position: static; }
+      .menu-btn { display: inline-flex; }
+      .mobile-overlay { display: block; }
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: min(84vw, 320px);
+        max-height: 100vh;
+        z-index: 40;
+        transform: translateX(-105%);
+        transition: transform .25s ease;
+        border-right: none;
+      }
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        padding: 12px 14px;
+      }
+      .topbar h1 {
+        font-size: 18px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .role-pill {
+        font-size: 11px;
+        padding: 5px 8px;
+      }
+      .panel {
+        padding: 12px;
+      }
+    }
+    @media (max-width: 560px) {
+      .topbar {
+        padding: 10px 10px;
+      }
+      .topbar h1 {
+        font-size: 16px;
+      }
+      .role-pill {
+        display: none;
+      }
     }
   `],
 })
 export class DashboardLayoutComponent {
   role: UserRole = '';
   visibleSections: MenuSection[] = [];
+  mobileMenuOpen = false;
   private readonly openSections = new Set<string>();
 
   private readonly sections: MenuSection[] = [
@@ -318,6 +410,27 @@ export class DashboardLayoutComponent {
     }
   }
 
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+  }
+
+  onMenuItemClick(): void {
+    if (window.innerWidth <= 980) {
+      this.closeMobileMenu();
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    if (window.innerWidth > 980 && this.mobileMenuOpen) {
+      this.mobileMenuOpen = false;
+    }
+  }
+
   private matchesRole(roles: UserRole[]): boolean {
     if (!this.role) return false;
     return roles.includes(this.role);
@@ -335,6 +448,7 @@ export class DashboardLayoutComponent {
 
   logout(): void {
     this.authService.logout();
+    this.closeMobileMenu();
     this.router.navigate(['/login']);
   }
 }
