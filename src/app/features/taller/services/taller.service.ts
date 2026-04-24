@@ -26,6 +26,10 @@ export interface Taller {
   latitud?: number | null;
   longitud?: number | null;
   disponible: boolean;
+  estado_operativo?: 'disponible' | 'ocupado' | 'cerrado' | 'fuera_de_servicio';
+  capacidad_maxima?: number;
+  radio_cobertura_km?: number;
+  observaciones_operativas?: string | null;
   servicios: string[];
   calificacion?: number;
   estado_aprobacion: 'pendiente' | 'aprobado' | 'rechazado';
@@ -34,6 +38,46 @@ export interface Taller {
   responsable_nombre?: string | null;
   responsable_email?: string | null;
   responsable_telefono?: string | null;
+}
+
+export interface TurnoDisponible {
+  tecnico_id: string;
+  tecnico_nombre: string;
+  turno_id: string;
+  nombre: string;
+  especialidad?: string | null;
+  disponible: boolean;
+  inicio?: string | null;
+  fin?: string | null;
+}
+
+export interface DisponibilidadTaller {
+  taller_id: string;
+  nombre_taller: string;
+  estado_operativo: 'disponible' | 'ocupado' | 'cerrado' | 'fuera_de_servicio';
+  disponible: boolean;
+  capacidad_maxima: number;
+  capacidad_disponible: number;
+  radio_cobertura_km: number;
+  servicios: string[];
+  tecnicos_disponibles: number;
+  tecnicos_totales: number;
+  direccion?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  observaciones_operativas?: string | null;
+  turnos_disponibles: TurnoDisponible[];
+}
+
+export interface DisponibilidadUpdateRequest {
+  disponible?: boolean;
+  estado_operativo?: 'disponible' | 'ocupado' | 'cerrado' | 'fuera_de_servicio';
+  capacidad_maxima?: number;
+  radio_cobertura_km?: number;
+  servicios?: string[];
+  latitud?: number;
+  longitud?: number;
+  observaciones_operativas?: string;
 }
 
 export interface Incidente {
@@ -166,6 +210,14 @@ export class TallerService {
 
   cambiarDisponibilidad(disponible: boolean): Observable<Taller> {
     return this.http.patch<Taller>(`${this.apiBase}/taller/mi-taller/disponibilidad`, { disponible });
+  }
+
+  obtenerDisponibilidadMiTaller(): Observable<DisponibilidadTaller> {
+    return this.http.get<DisponibilidadTaller>(`${this.apiBase}/taller/mi-taller/disponibilidad`);
+  }
+
+  actualizarDisponibilidadMiTaller(payload: DisponibilidadUpdateRequest): Observable<Taller> {
+    return this.http.patch<Taller>(`${this.apiBase}/taller/mi-taller/disponibilidad`, payload);
   }
 
   listarTecnicos(): Observable<Tecnico[]> {
