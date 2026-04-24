@@ -1,26 +1,39 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import {
   DisponibilidadTaller,
+  TallerAdminOption,
   TallerService,
 } from '../../services/taller.service';
+import { AuthService } from '../../../auth/services/auth.service';
 
 @Component({
   selector: 'app-disponibilidad-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
     <section class="card">
       <header class="hero">
-        <p class="eyebrow">CU07 · Taller</p>
+        <p class="eyebrow">Taller</p>
         <h2>Disponibilidad Operativa</h2>
         <p class="sub">Configura estado, capacidad, cobertura y servicios para que el motor de asignación use datos reales.</p>
       </header>
 
       <p *ngIf="error" class="error">{{ error }}</p>
       <p *ngIf="mensaje" class="ok">{{ mensaje }}</p>
+      <p *ngIf="isSupervision" class="readonly-banner">Modo supervisión Admin: solo lectura</p>
+
+      <label *ngIf="isSupervision">
+        Taller a visualizar
+        <select [(ngModel)]="selectedTallerId" (change)="cargar()">
+          <option value="">Selecciona un taller</option>
+          <option *ngFor="let t of talleresAdmin" [value]="t.id">{{ t.nombre }}</option>
+        </select>
+      </label>
 
       <div class="summary" *ngIf="snapshot">
         <article>
@@ -75,7 +88,7 @@ import {
         </label>
 
         <label class="check-row">
-          <input type="checkbox" formControlName="disponible" />
+          <input type="checkbox" formControlName="disponible" [disabled]="isSupervision" />
           Disponible para asignación
         </label>
 
@@ -85,6 +98,7 @@ import {
             <input
               type="checkbox"
               [checked]="selectedServicios.has(s)"
+              [disabled]="isSupervision"
               (change)="toggleServicio(s, $any($event.target).checked)"
             />
             {{ s }}
@@ -96,7 +110,7 @@ import {
           <textarea rows="3" formControlName="observaciones_operativas" placeholder="Ej: horario reducido por mantenimiento"></textarea>
         </label>
 
-        <button type="submit" [disabled]="loading || form.invalid">
+        <button type="submit" [disabled]="loading || form.invalid || isSupervision">
           {{ loading ? 'Guardando...' : 'Guardar disponibilidad' }}
         </button>
       </form>
@@ -149,6 +163,7 @@ import {
     th { color:#2f4a73; background:#f8faff; text-transform:uppercase; font-size:11px; letter-spacing:.4px; }
     .ok { color:#027a48; margin:0; }
     .error { color:#b42318; margin:0; }
+    .readonly-banner { margin:0; color:#8b5a00; background:#fff1d1; border:1px solid #f1d08a; border-radius:8px; padding:8px 10px; font-weight:600; }
     .turnos h3 { margin:0 0 6px; color:#1f2b45; }
     @media (max-width: 980px) {
       .summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -168,6 +183,9 @@ export class DisponibilidadPageComponent implements OnInit {
   readonly selectedServicios = new Set<string>();
 
   snapshot: DisponibilidadTaller | null = null;
+  isSupervision = false;
+  selectedTallerId = '';
+  talleresAdmin: TallerAdminOption[] = [];
   loading = false;
   mensaje = '';
   error = '';
@@ -185,14 +203,46 @@ export class DisponibilidadPageComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly tallerService: TallerService,
+    private readonly authService: AuthService,
+    private readonly route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    const role = this.authService.getCurrentRole();
+    const modo = this.route.snapshot.queryParamMap.get('modo');
+    this.isSupervision = role === 'admin' && modo === 'supervision';
+    if (this.isSupervision) {
+      this.form.disable({ emitEvent: false });
+      this.cargarTalleresAdmin();
+      return;
+    }
     this.cargar();
   }
 
+  cargarTalleresAdmin(): void {
+    this.tallerService.listarTalleresAdmin().subscribe({
+      next: (rows) => {
+        this.talleresAdmin = rows ?? [];
+        if (!this.selectedTallerId && this.talleresAdmin.length) {
+          this.selectedTallerId = this.route.snapshot.queryParamMap.get('tallerId') || this.talleresAdmin[0].id;
+        }
+        this.cargar();
+      },
+      error: (err) => {
+        this.error = err?.error?.detail ?? 'No se pudo cargar talleres';
+      },
+    });
+  }
+
   cargar(): void {
-    this.tallerService.obtenerDisponibilidadMiTaller().subscribe({
+    const request$ = this.isSupervision
+      ? (this.selectedTallerId ? this.tallerService.obtenerDisponibilidadTallerAdmin(this.selectedTallerId) : null)
+      : this.tallerService.obtenerDisponibilidadMiTaller();
+    if (!request$) {
+      this.snapshot = null;
+      return;
+    }
+    request$.subscribe({
       next: (res) => {
         this.snapshot = res;
         this.selectedServicios.clear();
@@ -221,6 +271,7 @@ export class DisponibilidadPageComponent implements OnInit {
   }
 
   guardar(): void {
+    if (this.isSupervision) return;
     if (this.form.invalid) return;
     const servicios = Array.from(this.selectedServicios);
     if (!servicios.length) {

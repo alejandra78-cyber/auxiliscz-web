@@ -5,17 +5,21 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../features/auth/services/auth.service';
 
 type UserRole = 'admin' | 'taller' | 'tecnico' | 'cliente' | 'conductor' | '';
+type AccessMode = 'allow' | 'readonly' | 'blocked';
+type ActorLabel = 'Todos' | 'Cliente' | 'Taller' | 'Taller/Técnico' | 'Cliente/Taller' | 'Admin' | 'Taller/Sistema';
 
 interface MenuItem {
+  code: string;
   label: string;
+  actor: ActorLabel;
   path: string;
   roles: UserRole[];
+  supervision?: boolean;
 }
 
 interface MenuSection {
   key: string;
   title: string;
-  roles: UserRole[];
   items: MenuItem[];
 }
 
@@ -33,20 +37,41 @@ interface MenuSection {
 
         <a class="home-link" routerLink="/inicio" routerLinkActive="active" (click)="onMenuItemClick()">Inicio</a>
 
-        <section *ngFor="let section of visibleSections" class="menu-section">
+        <section *ngFor="let section of menuSections" class="menu-section">
           <button class="section-toggle" (click)="toggleSection(section.key)" [attr.aria-expanded]="isOpen(section.key)">
             <span>{{ section.title }}</span>
             <span class="chevron" [class.open]="isOpen(section.key)">▾</span>
           </button>
           <nav *ngIf="isOpen(section.key)" class="section-items">
-            <a
-              *ngFor="let item of section.items"
-              [routerLink]="item.path"
-              routerLinkActive="active"
-              (click)="onMenuItemClick()"
-            >
-              {{ item.label }}
-            </a>
+            <div *ngFor="let item of section.items" class="item-wrap">
+              <a
+                *ngIf="accessOf(item) !== 'blocked'"
+                [routerLink]="item.path"
+                [queryParams]="itemQueryParams(item)"
+                routerLinkActive="active"
+                (click)="onMenuItemClick()"
+              >
+                <div class="item-main">
+                  <strong>{{ item.code }} · {{ item.label }}</strong>
+                  <small>Actor: {{ item.actor }}</small>
+                </div>
+                <small class="tag" [class.readonly]="accessOf(item) === 'readonly'">
+                  {{ accessOf(item) === 'readonly' ? 'Solo lectura' : 'Acceso' }}
+                </small>
+              </a>
+              <button
+                *ngIf="accessOf(item) === 'blocked'"
+                type="button"
+                class="blocked-item"
+                disabled
+              >
+                <div class="item-main">
+                  <strong>{{ item.code }} · {{ item.label }}</strong>
+                  <small>Actor: {{ item.actor }}</small>
+                </div>
+                <small class="tag blocked">Bloqueado</small>
+              </button>
+            </div>
           </nav>
         </section>
 
@@ -166,18 +191,68 @@ interface MenuSection {
       gap: 4px;
       padding: 0 8px 8px;
     }
-    .section-items a {
+    .section-items a,
+    .blocked-item {
       color: #dfe8ff;
       text-decoration: none;
       padding: 8px 10px;
       border-radius: 8px;
       transition: all .2s ease;
       font-size: 13px;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      text-align: left;
     }
     .section-items a:hover,
     .section-items a.active {
       background: rgba(255,255,255,.18);
       color: #fff;
+    }
+    .blocked-item {
+      opacity: .75;
+      cursor: not-allowed;
+    }
+    .item-main {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+    .item-main strong {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f3f7ff;
+      line-height: 1.2;
+    }
+    .item-main small {
+      font-size: 10px;
+      color: #c7d5f8;
+      line-height: 1.2;
+    }
+    .tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-radius: 999px;
+      padding: 2px 6px;
+      background: rgba(143, 173, 255, 0.25);
+      color: #dfe8ff;
+      border: 1px solid rgba(199, 216, 255, 0.35);
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+    .tag.readonly {
+      background: rgba(255, 216, 145, 0.22);
+      border-color: rgba(255, 216, 145, 0.45);
+      color: #ffe6b5;
+    }
+    .tag.blocked {
+      background: rgba(255, 149, 149, 0.18);
+      border-color: rgba(255, 182, 182, 0.35);
+      color: #ffd8d8;
     }
     .quick-actions {
       margin-top: auto;
@@ -329,7 +404,7 @@ interface MenuSection {
 })
 export class DashboardLayoutComponent {
   role: UserRole = '';
-  visibleSections: MenuSection[] = [];
+  menuSections: MenuSection[] = [];
   mobileMenuOpen = false;
   private readonly openSections = new Set<string>();
 
@@ -337,52 +412,55 @@ export class DashboardLayoutComponent {
     {
       key: 'clientes-vehiculos',
       title: 'Gestión de Clientes y Vehículos',
-      roles: ['cliente', 'conductor', 'admin'],
       items: [
-        { label: 'Registrar vehículos', path: '/clientes-vehiculos/registrar-vehiculo', roles: ['cliente', 'conductor', 'admin'] },
-        { label: 'Estado de solicitud', path: '/clientes-vehiculos/estado-solicitud', roles: ['cliente', 'conductor', 'admin'] },
-        { label: 'Ubicación del técnico', path: '/clientes-vehiculos/ubicacion-tecnico', roles: ['cliente', 'conductor', 'admin'] },
+        { code: '', label: 'Registrar vehículos', actor: 'Cliente', path: '/clientes-vehiculos/registrar-vehiculo', roles: ['cliente', 'conductor'] },
+        { code: '', label: 'Estado de solicitud', actor: 'Cliente', path: '/clientes-vehiculos/estado-solicitud', roles: ['cliente', 'conductor'] },
+        { code: '', label: 'Ubicación del técnico', actor: 'Cliente', path: '/clientes-vehiculos/ubicacion-tecnico', roles: ['cliente', 'conductor'] },
       ],
     },
     {
       key: 'talleres-operacion',
       title: 'Gestión de Talleres y Operación',
-      roles: ['taller', 'tecnico', 'admin'],
       items: [
-        { label: 'Disponibilidad', path: '/talleres-operacion/disponibilidad', roles: ['taller', 'admin'] },
-        { label: 'Técnicos', path: '/talleres-operacion/tecnicos', roles: ['taller', 'admin'] },
-        { label: 'Trabajo completado', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico', 'admin'] },
+        { code: '', label: 'Disponibilidad', actor: 'Taller', path: '/talleres-operacion/disponibilidad', roles: ['taller'], supervision: true },
+        { code: '', label: 'Técnicos', actor: 'Taller', path: '/talleres-operacion/tecnicos', roles: ['taller'], supervision: true },
+        { code: '', label: 'Trabajo completado', actor: 'Taller/Técnico', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico'], supervision: true },
       ],
     },
     {
       key: 'registro-emergencias',
       title: 'Registro de Emergencias',
-      roles: ['cliente', 'conductor', 'taller', 'admin'],
       items: [
-        { label: 'Reportar emergencia', path: '/registro-emergencias/reportar-emergencia', roles: ['cliente', 'conductor', 'admin'] },
-        { label: 'Cancelar solicitud', path: '/registro-emergencias/cancelar-solicitud', roles: ['cliente', 'conductor', 'admin'] },
-        { label: 'Comunicación y notificaciones', path: '/registro-emergencias/comunicacion-notificaciones', roles: ['taller', 'admin'] },
+        { code: '', label: 'Reportar emergencia', actor: 'Cliente', path: '/registro-emergencias/reportar-emergencia', roles: ['cliente', 'conductor'] },
+        { code: '', label: 'Cancelar solicitud', actor: 'Cliente', path: '/registro-emergencias/cancelar-solicitud', roles: ['cliente', 'conductor'] },
+        { code: '', label: 'Comunicación y notificaciones', actor: 'Cliente/Taller', path: '/registro-emergencias/comunicacion-notificaciones', roles: ['taller'], supervision: true },
       ],
     },
     {
       key: 'atencion-asignacion',
       title: 'Atención y Asignación de Solicitudes',
-      roles: ['taller', 'admin'],
       items: [
-        { label: 'Consultar solicitudes', path: '/atencion-solicitudes/consultar-solicitudes', roles: ['taller', 'admin'] },
-        { label: 'Evaluar solicitud', path: '/atencion-solicitudes/evaluar-solicitud', roles: ['taller', 'admin'] },
-        { label: 'Asignar servicio', path: '/atencion-solicitudes/asignar-servicio', roles: ['taller', 'admin'] },
-        { label: 'Actualizar estado', path: '/atencion-solicitudes/actualizar-estado', roles: ['taller', 'admin'] },
+        { code: '', label: 'Consultar solicitudes', actor: 'Taller', path: '/atencion-solicitudes/consultar-solicitudes', roles: ['taller'], supervision: true },
+        { code: '', label: 'Evaluar solicitud', actor: 'Taller', path: '/atencion-solicitudes/evaluar-solicitud', roles: ['taller'], supervision: true },
+        { code: '', label: 'Asignar servicio', actor: 'Taller/Sistema', path: '/atencion-solicitudes/asignar-servicio', roles: ['taller'], supervision: true },
+        { code: '', label: 'Actualizar estado', actor: 'Taller', path: '/atencion-solicitudes/actualizar-estado', roles: ['taller'], supervision: true },
       ],
     },
-    // Paquete pagos oculto temporalmente (ciclo 3)
+    {
+      key: 'pagos',
+      title: 'Pagos',
+      items: [
+        { code: '', label: 'Generar cotización', actor: 'Taller', path: '/pagos/generar-cotizacion', roles: ['taller'], supervision: true },
+        { code: '', label: 'Gestionar cotización', actor: 'Cliente/Taller', path: '/pagos/gestionar-cotizacion', roles: ['taller', 'cliente', 'conductor'], supervision: true },
+        { code: '', label: 'Procesar pago', actor: 'Cliente', path: '/pagos/procesar-pago', roles: ['cliente', 'conductor'] },
+      ],
+    },
     {
       key: 'admin-reportes',
       title: 'Administración y Reportes',
-      roles: ['admin'],
       items: [
-        { label: 'Aprobar talleres', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
-        { label: 'Roles y permisos', path: '/admin-reportes/roles-permisos', roles: ['admin'] },
+        { code: '', label: 'Aprobar talleres', actor: 'Admin', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
+        { code: '', label: 'Roles y permisos', actor: 'Admin', path: '/admin-reportes/roles-permisos', roles: ['admin'] },
       ],
     },
   ];
@@ -392,10 +470,7 @@ export class DashboardLayoutComponent {
     private readonly router: Router,
   ) {
     this.role = (this.authService.getCurrentRole() as UserRole) || '';
-    this.visibleSections = this.buildVisibleSections();
-    for (const s of this.visibleSections) {
-      this.openSections.add(s.key);
-    }
+    this.menuSections = this.sections;
   }
 
   isOpen(sectionKey: string): boolean {
@@ -431,19 +506,17 @@ export class DashboardLayoutComponent {
     }
   }
 
-  private matchesRole(roles: UserRole[]): boolean {
-    if (!this.role) return false;
-    return roles.includes(this.role);
+  accessOf(item: MenuItem): AccessMode {
+    if (this.role && item.roles.includes(this.role)) return 'allow';
+    if (this.role === 'admin' && item.supervision) return 'readonly';
+    return 'blocked';
   }
 
-  private buildVisibleSections(): MenuSection[] {
-    return this.sections
-      .filter((s) => this.matchesRole(s.roles))
-      .map((s) => ({
-        ...s,
-        items: s.items.filter((item) => this.matchesRole(item.roles)),
-      }))
-      .filter((s) => s.items.length > 0);
+  itemQueryParams(item: MenuItem): Record<string, string> | undefined {
+    if (this.accessOf(item) === 'readonly') {
+      return { modo: 'supervision' };
+    }
+    return undefined;
   }
 
   logout(): void {

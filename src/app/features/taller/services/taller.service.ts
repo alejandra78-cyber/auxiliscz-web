@@ -158,6 +158,11 @@ export interface SolicitudAfiliacion {
   taller_id?: string | null;
 }
 
+export interface TallerAdminOption {
+  id: string;
+  nombre: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TallerService {
   private readonly apiBase = environment.apiUrl.endsWith('/api')
@@ -200,6 +205,10 @@ export class TallerService {
     return this.http.get<Taller[]>(`${this.apiBase}/taller/admin/onboarding${qs}`);
   }
 
+  listarTalleresAdmin(): Observable<TallerAdminOption[]> {
+    return this.http.get<TallerAdminOption[]>(`${this.apiBase}/taller/admin/talleres`);
+  }
+
   aprobarTaller(tallerId: string, comentario?: string): Observable<any> {
     return this.http.patch(`${this.apiBase}/taller/admin/${tallerId}/aprobar`, { comentario });
   }
@@ -216,12 +225,20 @@ export class TallerService {
     return this.http.get<DisponibilidadTaller>(`${this.apiBase}/taller/mi-taller/disponibilidad`);
   }
 
+  obtenerDisponibilidadTallerAdmin(tallerId: string): Observable<DisponibilidadTaller> {
+    return this.http.get<DisponibilidadTaller>(`${this.apiBase}/taller/admin/talleres/${tallerId}/disponibilidad`);
+  }
+
   actualizarDisponibilidadMiTaller(payload: DisponibilidadUpdateRequest): Observable<Taller> {
     return this.http.patch<Taller>(`${this.apiBase}/taller/mi-taller/disponibilidad`, payload);
   }
 
   listarTecnicos(): Observable<Tecnico[]> {
     return this.http.get<Tecnico[]>(`${this.apiBase}/taller/mi-taller/tecnicos`);
+  }
+
+  listarTecnicosTallerAdmin(tallerId: string): Observable<Tecnico[]> {
+    return this.http.get<Tecnico[]>(`${this.apiBase}/taller/admin/talleres/${tallerId}/tecnicos`);
   }
 
   listarCandidatosTecnico(): Observable<TecnicoCandidato[]> {

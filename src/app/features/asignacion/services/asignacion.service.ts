@@ -19,8 +19,35 @@ export interface SolicitudServicio {
   taller_nombre?: string | null;
   tecnico_nombre?: string | null;
   servicio?: string | null;
+  incidente_id?: string | null;
+  latitud?: number | null;
+  longitud?: number | null;
+  distancia_km?: number | null;
+  puntaje_asignacion?: number | null;
+  motivo_asignacion?: string | null;
+  motivo_rechazo?: string | null;
+  fecha_asignacion?: string | null;
+  fecha_respuesta_taller?: string | null;
   tecnico_id?: string | null;
   taller_id?: string | null;
+}
+
+export interface EvidenciaSolicitud {
+  id: string;
+  tipo: string;
+  url_archivo?: string | null;
+  transcripcion?: string | null;
+  subido_en?: string | null;
+}
+
+export interface SolicitudServicioDetalle extends SolicitudServicio {
+  evidencias: EvidenciaSolicitud[];
+}
+
+export interface SolicitudesFiltro {
+  estado?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
 }
 
 export interface TecnicoDisponible {
@@ -56,14 +83,33 @@ export class AsignacionService {
 
   constructor(private readonly http: HttpClient) {}
 
-  listarSolicitudes(): Observable<SolicitudServicio[]> {
-    return this.http.get<SolicitudServicio[]>(`${this.apiBase}/asignacion/solicitudes`);
+  listarSolicitudes(filtro?: SolicitudesFiltro): Observable<SolicitudServicio[]> {
+    const query = new URLSearchParams();
+    if (filtro?.estado) query.set('estado', filtro.estado);
+    if (filtro?.fecha_desde) query.set('fecha_desde', filtro.fecha_desde);
+    if (filtro?.fecha_hasta) query.set('fecha_hasta', filtro.fecha_hasta);
+    const qs = query.toString();
+    return this.http.get<SolicitudServicio[]>(`${this.apiBase}/asignacion/solicitudes${qs ? `?${qs}` : ''}`);
+  }
+
+  obtenerDetalleSolicitud(incidenteId: string): Observable<SolicitudServicioDetalle> {
+    return this.http.get<SolicitudServicioDetalle>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}`);
   }
 
   evaluarSolicitud(incidenteId: string, aprobar: boolean, observacion?: string): Observable<SolicitudServicio> {
     return this.http.post<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/evaluar`, {
       aprobar,
       observacion,
+    });
+  }
+
+  aceptarSolicitud(incidenteId: string): Observable<SolicitudServicio> {
+    return this.http.post<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/aceptar`, {});
+  }
+
+  rechazarSolicitud(incidenteId: string, motivoRechazo?: string): Observable<SolicitudServicio> {
+    return this.http.post<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/rechazar`, {
+      motivo_rechazo: motivoRechazo,
     });
   }
 
