@@ -9,13 +9,54 @@ export interface Tecnico {
   usuario_id?: string | null;
   email?: string | null;
   nombre: string;
+  telefono?: string | null;
+  especialidad?: string | null;
+  estado_operativo?: 'disponible' | 'ocupado' | 'en_camino' | 'en_proceso' | 'fuera_de_servicio';
+  activo?: boolean;
   disponible: boolean;
+  servicio_ids?: string[];
+  especialidades?: string[];
+  especialidades_nombres?: string[];
+  latitud_actual?: number | null;
+  longitud_actual?: number | null;
+  ultima_actualizacion_ubicacion?: string | null;
 }
 
 export interface TecnicoCandidato {
   id: string;
   nombre: string;
   email: string;
+}
+
+export interface TecnicoCreateRequest {
+  usuario_id?: string;
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+  especialidad?: string;
+  servicio_ids?: string[];
+  disponible?: boolean;
+}
+
+export interface TecnicoUpdateRequest {
+  nombre?: string;
+  telefono?: string;
+  especialidad?: string;
+  estado_operativo?: 'disponible' | 'ocupado' | 'en_camino' | 'en_proceso' | 'fuera_de_servicio';
+  disponible?: boolean;
+}
+
+export interface TecnicoEstadoRequest {
+  activo?: boolean;
+  estado_operativo?: 'disponible' | 'ocupado' | 'en_camino' | 'en_proceso' | 'fuera_de_servicio';
+  disponible?: boolean;
+}
+
+export interface ServicioCatalogo {
+  id: string;
+  codigo: string;
+  nombre_visible: string;
+  activo: boolean;
 }
 
 export interface Taller {
@@ -225,6 +266,10 @@ export class TallerService {
     return this.http.get<DisponibilidadTaller>(`${this.apiBase}/taller/mi-taller/disponibilidad`);
   }
 
+  listarServiciosMiTaller(): Observable<ServicioCatalogo[]> {
+    return this.http.get<ServicioCatalogo[]>(`${this.apiBase}/taller/servicios`);
+  }
+
   obtenerDisponibilidadTallerAdmin(tallerId: string): Observable<DisponibilidadTaller> {
     return this.http.get<DisponibilidadTaller>(`${this.apiBase}/taller/admin/talleres/${tallerId}/disponibilidad`);
   }
@@ -245,10 +290,21 @@ export class TallerService {
     return this.http.get<TecnicoCandidato[]>(`${this.apiBase}/taller/mi-taller/tecnicos/candidatos`);
   }
 
-  registrarTecnico(usuarioId: string, disponible = true): Observable<Tecnico> {
-    return this.http.post<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos`, {
-      usuario_id: usuarioId,
-      disponible,
+  registrarTecnico(payload: TecnicoCreateRequest): Observable<Tecnico> {
+    return this.http.post<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos`, payload);
+  }
+
+  actualizarTecnico(tecnicoId: string, payload: TecnicoUpdateRequest): Observable<Tecnico> {
+    return this.http.put<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos/${tecnicoId}`, payload);
+  }
+
+  cambiarEstadoTecnico(tecnicoId: string, payload: TecnicoEstadoRequest): Observable<Tecnico> {
+    return this.http.patch<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos/${tecnicoId}/estado`, payload);
+  }
+
+  actualizarEspecialidadesTecnico(tecnicoId: string, servicioIds: string[]): Observable<Tecnico> {
+    return this.http.put<Tecnico>(`${this.apiBase}/taller/mi-taller/tecnicos/${tecnicoId}/especialidades`, {
+      servicio_ids: servicioIds,
     });
   }
 

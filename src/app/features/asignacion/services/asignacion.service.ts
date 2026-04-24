@@ -17,6 +17,7 @@ export interface SolicitudServicio {
   cliente_nombre?: string | null;
   creado_en: string;
   taller_nombre?: string | null;
+  estado_asignacion?: string | null;
   tecnico_nombre?: string | null;
   servicio?: string | null;
   incidente_id?: string | null;
@@ -25,6 +26,7 @@ export interface SolicitudServicio {
   distancia_km?: number | null;
   puntaje_asignacion?: number | null;
   motivo_asignacion?: string | null;
+  origen_asignacion?: string | null;
   motivo_rechazo?: string | null;
   fecha_asignacion?: string | null;
   fecha_respuesta_taller?: string | null;
@@ -73,6 +75,27 @@ export interface SugerenciaAsignacion {
   servicio_sugerido?: string | null;
   puntaje?: number | null;
   motivo?: string | null;
+}
+
+export interface CandidatoAsignacion {
+  taller_id: string;
+  nombre: string;
+  distancia_km: number;
+  puntaje: number;
+  capacidad_disponible?: number | null;
+  tecnicos_disponibles?: number | null;
+  estado_operativo?: string | null;
+  motivo?: string | null;
+}
+
+export interface ResultadoAsignacionAutomatica {
+  taller_id?: string | null;
+  nombre_taller?: string | null;
+  mensaje: string;
+  distancia_km?: number | null;
+  puntaje?: number | null;
+  motivo_asignacion?: string | null;
+  origen_asignacion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -134,6 +157,21 @@ export class AsignacionService {
     });
   }
 
+  actualizarEstadoServicio(
+    incidenteId: string,
+    estado: string,
+    observacion?: string,
+    tecnicoId?: string,
+    costo?: number,
+  ): Observable<SolicitudServicio> {
+    return this.http.patch<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/estado`, {
+      estado,
+      observacion,
+      tecnico_id: tecnicoId,
+      costo,
+    });
+  }
+
   listarTecnicosDisponibles(solicitudId?: string): Observable<TecnicoDisponible[]> {
     const qs = solicitudId ? `?solicitud_id=${encodeURIComponent(solicitudId)}` : '';
     return this.http.get<TecnicoDisponible[]>(`${this.apiBase}/asignacion/tecnicos/disponibles${qs}`);
@@ -145,5 +183,13 @@ export class AsignacionService {
 
   sugerenciaAsignacionIA(incidenteId: string): Observable<SugerenciaAsignacion> {
     return this.http.get<SugerenciaAsignacion>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/sugerencia-ia`);
+  }
+
+  listarCandidatosIncidente(incidenteId: string): Observable<CandidatoAsignacion[]> {
+    return this.http.get<CandidatoAsignacion[]>(`${this.apiBase}/asignacion/candidatos/${incidenteId}`);
+  }
+
+  asignarAutomaticamente(incidenteId: string): Observable<ResultadoAsignacionAutomatica> {
+    return this.http.post<ResultadoAsignacionAutomatica>(`${this.apiBase}/asignacion/asignar/${incidenteId}`, {});
   }
 }

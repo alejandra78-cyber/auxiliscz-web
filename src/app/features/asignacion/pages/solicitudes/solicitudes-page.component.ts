@@ -65,7 +65,7 @@ import {
               <td>{{ s.cliente_nombre || 'Cliente' }}</td>
               <td>{{ s.tipo || 'incierto' }}</td>
               <td><span class="prio" [class.p1]="s.prioridad === 1" [class.p2]="s.prioridad === 2">{{ s.prioridad || '-' }}</span></td>
-              <td><span class="estado">{{ s.estado }}</span></td>
+              <td><span class="estado">{{ s.estado_asignacion || s.estado }}</span></td>
               <td>{{ s.distancia_km != null ? (s.distancia_km + ' km') : '-' }}</td>
               <td>{{ formatFecha(s.creado_en) }}</td>
               <td><button type="button" (click)="verDetalle(s)">Ver detalle</button></td>
@@ -78,7 +78,7 @@ import {
         <article class="card" *ngFor="let s of solicitudesFiltradas">
           <div class="head">
             <h4>{{ s.codigo_solicitud || ('SOL-' + s.id.slice(0, 8).toUpperCase()) }}</h4>
-            <span class="estado">{{ s.estado }}</span>
+            <span class="estado">{{ s.estado_asignacion || s.estado }}</span>
           </div>
           <p><strong>Cliente:</strong> {{ s.cliente_nombre || 'Cliente' }}</p>
           <p><strong>Tipo:</strong> {{ s.tipo || 'incierto' }}</p>
@@ -179,7 +179,20 @@ import {
   `],
 })
 export class SolicitudesPageComponent implements OnInit {
-  readonly estados = ['pendiente', 'en_evaluacion', 'aprobada', 'rechazada', 'asignada', 'en_proceso', 'completada', 'cancelada'];
+  readonly estados = [
+    'pendiente',
+    'en_evaluacion',
+    'aprobada',
+    'rechazada',
+    'pendiente_respuesta',
+    'aceptada',
+    'tecnico_asignado',
+    'en_camino',
+    'en_proceso',
+    'atendido',
+    'finalizado',
+    'cancelado',
+  ];
 
   solicitudes: SolicitudServicio[] = [];
   detalle: SolicitudServicioDetalle | null = null;
@@ -248,4 +261,3 @@ export class SolicitudesPageComponent implements OnInit {
     return d.toLocaleString();
   }
 }
-

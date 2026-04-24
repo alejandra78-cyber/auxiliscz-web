@@ -53,10 +53,10 @@ interface MenuSection {
               >
                 <div class="item-main">
                   <strong>{{ item.code }} · {{ item.label }}</strong>
-                  <small>Actor: {{ item.actor }}</small>
+                  <small>{{ item.actor }}</small>
                 </div>
                 <small class="tag" [class.readonly]="accessOf(item) === 'readonly'">
-                  {{ accessOf(item) === 'readonly' ? 'Solo lectura' : 'Acceso' }}
+                  {{ accessOf(item) === 'readonly' ? 'Solo lectura' : '●' }}
                 </small>
               </a>
               <button
@@ -67,9 +67,9 @@ interface MenuSection {
               >
                 <div class="item-main">
                   <strong>{{ item.code }} · {{ item.label }}</strong>
-                  <small>Actor: {{ item.actor }}</small>
+                  <small>{{ item.actor }}</small>
                 </div>
-                <small class="tag blocked">Bloqueado</small>
+                <small class="tag blocked" aria-label="Bloqueado" title="Bloqueado">●</small>
               </button>
             </div>
           </nav>
