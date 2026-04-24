@@ -9,8 +9,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
+  const isPublicAuthEndpoint =
+    req.url.includes('/auth/login')
+    || req.url.includes('/auth/register')
+    || req.url.includes('/auth/password/recovery-request')
+    || req.url.includes('/auth/password/validate-token')
+    || req.url.includes('/auth/password/reset');
+
   const token = authService.getToken();
-  const shouldAttachToken = !!token && !req.url.includes('/auth/login');
+  const shouldAttachToken = !!token && !isPublicAuthEndpoint;
 
   const request = shouldAttachToken
     ? req.clone({
@@ -20,7 +27,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(request).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401 && !req.url.includes('/auth/login')) {
+      if (err.status === 401 && !isPublicAuthEndpoint) {
         authService.logout();
         router.navigate(['/login']);
       }
