@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { divIcon, latLng, LeafletMouseEvent, Map, marker, Marker, tileLayer } from 'leaflet';
 
 import {
   DisponibilidadTaller,
@@ -77,20 +79,49 @@ import { AuthService } from '../../../auth/services/auth.service';
           <input type="number" min="1" step="0.5" formControlName="radio_cobertura_km" />
         </label>
 
-        <label>
-          Latitud
-          <input type="number" step="0.000001" formControlName="latitud" />
-        </label>
-
-        <label>
-          Longitud
-          <input type="number" step="0.000001" formControlName="longitud" />
-        </label>
-
         <label class="check-row">
           <input type="checkbox" formControlName="disponible" [disabled]="isSupervision" />
           Disponible para asignación
         </label>
+
+        <fieldset class="location-box full">
+          <legend>Ubicación del taller</legend>
+          <div class="map-head">
+            <label class="search-input">
+              Buscar dirección
+              <input
+                type="text"
+                [(ngModel)]="direccionBusqueda"
+                [ngModelOptions]="{standalone: true}"
+                placeholder="Ej: Av. Banzer, Santa Cruz"
+                [disabled]="isSupervision || buscandoDireccion"
+              />
+            </label>
+            <button type="button" class="ghost" (click)="buscarEnMapa()" [disabled]="isSupervision || buscandoDireccion">
+              {{ buscandoDireccion ? 'Buscando...' : 'Buscar en mapa' }}
+            </button>
+          </div>
+          <div class="coords">
+            <label>
+              Latitud
+              <input type="number" step="0.000001" formControlName="latitud" readonly />
+            </label>
+            <label>
+              Longitud
+              <input type="number" step="0.000001" formControlName="longitud" readonly />
+            </label>
+          </div>
+          <div class="map-wrap"><div id="disponibilidad-map" class="map"></div></div>
+          <p class="hint">Haz clic en el mapa o mueve el pin para ajustar la ubicación.</p>
+          <div class="location-actions">
+            <button type="button" class="ghost" (click)="usarUbicacionActual()" [disabled]="isSupervision || loadingGps">
+              {{ loadingGps ? 'Obteniendo GPS...' : 'Usar mi ubicación actual' }}
+            </button>
+            <button type="button" (click)="guardarUbicacion()" [disabled]="isSupervision || loadingLocation || !tieneLatLong()">
+              {{ loadingLocation ? 'Guardando ubicación...' : 'Cambiar ubicación' }}
+            </button>
+          </div>
+        </fieldset>
 
         <fieldset class="services">
           <legend>Servicios atendidos</legend>
@@ -155,8 +186,26 @@ import { AuthService } from '../../../auth/services/auth.service';
     .full { grid-column: 1 / -1; }
     .services { grid-column: 1 / -1; border:1px solid #e4e9f6; border-radius:10px; padding:10px; display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:8px; }
     .services legend { padding:0 6px; color:#38527a; font-size:13px; font-weight:700; }
+    .location-box { grid-column: 1 / -1; border:1px solid #e4e9f6; border-radius:10px; padding:10px; display:grid; gap:8px; }
+    .location-box legend { padding:0 6px; color:#38527a; font-size:13px; font-weight:700; }
+    .map-head { display:flex; justify-content: space-between; align-items: end; gap: 8px; }
+    .search-input { flex: 1; }
+    .coords { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .map-wrap { border-radius: 10px; overflow: hidden; border: 1px solid #d7e2f5; }
+    .map { height: 280px; width: 100%; background: #eef2fb; cursor: crosshair; }
+    :host ::ng-deep .pin-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #e24b4a;
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 2px #e24b4a;
+    }
+    .hint { margin: 0; font-size: 12px; color: #67758f; }
     .check-row { display:flex; align-items:center; gap:8px; font-weight:500; }
     .check-row input[type='checkbox'] { width:16px; height:16px; }
+    .location-actions { grid-column: 1 / -1; display:flex; gap:8px; flex-wrap: wrap; }
+    .ghost { background:#fff; color:#1f3a7a; border:1px solid #cfd8ef; }
     .table-wrap { overflow-x:auto; -webkit-overflow-scrolling: touch; }
     table { width:100%; min-width:700px; border-collapse: collapse; }
     th, td { border-bottom:1px solid #eef1f6; padding:8px; text-align:left; font-size:13px; }
@@ -172,13 +221,17 @@ import { AuthService } from '../../../auth/services/auth.service';
     @media (max-width: 700px) {
       .card { padding:12px; }
       .form-grid { grid-template-columns: 1fr; }
+      .map-head { flex-direction: column; align-items: stretch; }
+      .coords { grid-template-columns: 1fr; }
       .services { grid-template-columns: 1fr; }
+      .map { height: 240px; }
+      .location-actions button { width:100%; }
       button[type='submit'] { width:100%; }
       .summary { grid-template-columns: 1fr; }
     }
   `],
 })
-export class DisponibilidadPageComponent implements OnInit {
+export class DisponibilidadPageComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly serviciosCatalogo = ['bateria', 'llanta', 'motor', 'choque', 'remolque', 'otros'];
   readonly selectedServicios = new Set<string>();
 
@@ -187,8 +240,16 @@ export class DisponibilidadPageComponent implements OnInit {
   selectedTallerId = '';
   talleresAdmin: TallerAdminOption[] = [];
   loading = false;
+  loadingGps = false;
+  loadingLocation = false;
+  buscandoDireccion = false;
   mensaje = '';
   error = '';
+  direccionBusqueda = '';
+  private map: Map | null = null;
+  private pointMarker: Marker | null = null;
+  private readonly defaultLat = -17.7833;
+  private readonly defaultLng = -63.1821;
 
   readonly form = this.fb.group({
     disponible: [true, [Validators.required]],
@@ -202,6 +263,7 @@ export class DisponibilidadPageComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
+    private readonly http: HttpClient,
     private readonly tallerService: TallerService,
     private readonly authService: AuthService,
     private readonly route: ActivatedRoute,
@@ -217,6 +279,15 @@ export class DisponibilidadPageComponent implements OnInit {
       return;
     }
     this.cargar();
+  }
+
+  ngAfterViewInit(): void {
+    this.initMap();
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('resize', this.onResize);
+    this.map?.remove();
   }
 
   cargarTalleresAdmin(): void {
@@ -247,15 +318,18 @@ export class DisponibilidadPageComponent implements OnInit {
         this.snapshot = res;
         this.selectedServicios.clear();
         for (const s of res.servicios || []) this.selectedServicios.add(s);
+        const lat = res.latitud ?? this.defaultLat;
+        const lng = res.longitud ?? this.defaultLng;
         this.form.patchValue({
           disponible: !!res.disponible,
           estado_operativo: res.estado_operativo,
           capacidad_maxima: res.capacidad_maxima || 1,
           radio_cobertura_km: res.radio_cobertura_km || 10,
-          latitud: res.latitud ?? null,
-          longitud: res.longitud ?? null,
+          latitud: lat,
+          longitud: lng,
           observaciones_operativas: res.observaciones_operativas ?? '',
         });
+        this.actualizarCoordenadas(lat, lng, true);
         this.error = '';
       },
       error: (err) => {
@@ -269,6 +343,141 @@ export class DisponibilidadPageComponent implements OnInit {
     if (checked) this.selectedServicios.add(servicio);
     else this.selectedServicios.delete(servicio);
   }
+
+  tieneLatLong(): boolean {
+    const raw = this.form.getRawValue();
+    return raw.latitud != null && raw.longitud != null;
+  }
+
+  usarUbicacionActual(): void {
+    if (this.isSupervision) return;
+    if (!navigator.geolocation) {
+      this.error = 'Tu navegador no soporta geolocalización';
+      return;
+    }
+    this.loadingGps = true;
+    this.error = '';
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.loadingGps = false;
+        const lat = Number(position.coords.latitude.toFixed(6));
+        const lng = Number(position.coords.longitude.toFixed(6));
+        this.form.patchValue({
+          latitud: lat,
+          longitud: lng,
+        });
+        this.actualizarCoordenadas(lat, lng, true);
+        this.mensaje = 'Ubicación GPS obtenida. Presiona "Cambiar ubicación" para guardar.';
+      },
+      () => {
+        this.loadingGps = false;
+        this.error = 'No se pudo obtener GPS. Revisa permisos del navegador.';
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  }
+
+  guardarUbicacion(): void {
+    if (this.isSupervision) return;
+    const raw = this.form.getRawValue();
+    if (raw.latitud == null || raw.longitud == null) {
+      this.error = 'Debes completar latitud y longitud';
+      return;
+    }
+    this.loadingLocation = true;
+    this.error = '';
+    this.mensaje = '';
+    this.tallerService.actualizarUbicacionMiTaller(Number(raw.latitud), Number(raw.longitud)).subscribe({
+      next: () => {
+        this.loadingLocation = false;
+        this.mensaje = 'Ubicación del taller actualizada correctamente';
+        this.cargar();
+      },
+      error: (err) => {
+        this.loadingLocation = false;
+        this.error = err?.error?.detail ?? 'No se pudo actualizar ubicación del taller';
+      },
+    });
+  }
+
+  buscarEnMapa(): void {
+    if (this.isSupervision) return;
+    const direccion = this.direccionBusqueda.trim();
+    if (!direccion) {
+      this.error = 'Ingresa una dirección para buscar en el mapa';
+      return;
+    }
+    this.buscandoDireccion = true;
+    this.error = '';
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(direccion)}`;
+    this.http.get<Array<{ lat: string; lon: string }>>(url).subscribe({
+      next: (rows) => {
+        this.buscandoDireccion = false;
+        if (!rows.length) {
+          this.error = 'No se encontró la dirección en el mapa';
+          return;
+        }
+        const lat = Number(rows[0].lat);
+        const lng = Number(rows[0].lon);
+        this.actualizarCoordenadas(lat, lng, true);
+        this.mensaje = 'Dirección encontrada. Presiona "Cambiar ubicación" para guardar.';
+      },
+      error: () => {
+        this.buscandoDireccion = false;
+        this.error = 'No se pudo buscar la dirección en este momento';
+      },
+    });
+  }
+
+  private initMap(): void {
+    if (this.map) return;
+    const lat = this.form.controls.latitud.value ?? this.defaultLat;
+    const lng = this.form.controls.longitud.value ?? this.defaultLng;
+    this.map = new Map('disponibilidad-map', { zoomControl: true, preferCanvas: true }).setView([lat, lng], 13);
+    tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      updateWhenIdle: true,
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.map);
+    const defaultIcon = divIcon({
+      className: '',
+      html: '<div class="pin-dot"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+    this.pointMarker = marker([lat, lng], { draggable: !this.isSupervision, icon: defaultIcon }).addTo(this.map);
+    this.pointMarker.on('dragend', () => {
+      if (this.isSupervision) return;
+      const pos = this.pointMarker?.getLatLng();
+      if (pos) this.actualizarCoordenadas(pos.lat, pos.lng, false);
+    });
+    this.map.on('click', (e: LeafletMouseEvent) => {
+      if (this.isSupervision) return;
+      this.actualizarCoordenadas(e.latlng.lat, e.latlng.lng, true);
+    });
+    this.map.whenReady(() => {
+      setTimeout(() => this.map?.invalidateSize(), 0);
+      setTimeout(() => this.map?.invalidateSize(), 250);
+      setTimeout(() => this.map?.invalidateSize(), 800);
+    });
+    window.addEventListener('resize', this.onResize);
+  }
+
+  private actualizarCoordenadas(lat: number, lng: number, centrar: boolean): void {
+    this.form.patchValue({
+      latitud: Number(lat.toFixed(6)),
+      longitud: Number(lng.toFixed(6)),
+    });
+    if (this.pointMarker) {
+      this.pointMarker.setLatLng(latLng(lat, lng));
+    }
+    if (centrar && this.map) {
+      this.map.setView([lat, lng], 15);
+      this.map.invalidateSize();
+    }
+  }
+
+  private readonly onResize = () => this.map?.invalidateSize();
 
   guardar(): void {
     if (this.isSupervision) return;

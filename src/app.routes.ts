@@ -11,6 +11,8 @@ import { DisponibilidadPageComponent } from './app/features/taller/pages/disponi
 import { TecnicosPageComponent } from './app/features/taller/pages/tecnicos/tecnicos-page.component';
 import { DesempenoPageComponent } from './app/features/taller/pages/desempeno/desempeno-page.component';
 import { TrabajoCompletadoPageComponent } from './app/features/taller/pages/trabajo-completado/trabajo-completado-page.component';
+import { SeguimientoTecnicoPageComponent } from './app/features/taller/pages/seguimiento-tecnico/seguimiento-tecnico-page.component';
+import { UbicacionTallerPageComponent } from './app/features/taller/pages/ubicacion-taller/ubicacion-taller-page.component';
 import { SolicitudesPageComponent } from './app/features/asignacion/pages/solicitudes/solicitudes-page.component';
 import { EvaluarSolicitudPageComponent } from './app/features/asignacion/pages/evaluar-solicitud/evaluar-solicitud-page.component';
 import { AsignarServicioPageComponent } from './app/features/asignacion/pages/asignar-servicio/asignar-servicio-page.component';
@@ -77,6 +79,11 @@ export const appRoutes: Routes = [
         canActivate: [roleGuard(['taller', 'admin'])],
       },
       {
+        path: 'talleres-operacion/ubicacion-taller',
+        component: UbicacionTallerPageComponent,
+        canActivate: [roleGuard(['taller', 'admin'])],
+      },
+      {
         path: 'talleres-operacion/tecnicos',
         component: TecnicosPageComponent,
         canActivate: [roleGuard(['taller', 'admin'])],
@@ -91,6 +98,11 @@ export const appRoutes: Routes = [
         component: TrabajoCompletadoPageComponent,
         canActivate: [roleGuard(['taller', 'tecnico', 'admin'])],
       },
+      {
+        path: 'talleres-operacion/seguimiento-tecnico',
+        component: SeguimientoTecnicoPageComponent,
+        canActivate: [roleGuard(['tecnico'])],
+      },
 
       // Registro de Emergencias
       {
@@ -103,7 +115,7 @@ export const appRoutes: Routes = [
         path: 'registro-emergencias/cancelar-solicitud',
         component: PackagePlaceholderPageComponent,
         canActivate: [roleGuard(['cliente', 'conductor', 'admin'])],
-        data: { title: 'CU12 · Cancelar solicitud', description: 'Paquete: Registro de Emergencias' },
+        data: { title: 'Cancelar solicitud', description: 'Paquete: Registro de Emergencias' },
       },
       {
         path: 'registro-emergencias/comunicacion-notificaciones',
@@ -179,9 +191,11 @@ export const appRoutes: Routes = [
       { path: 'dashboard', redirectTo: '/inicio', pathMatch: 'full' },
       { path: 'taller/registrar', redirectTo: 'talleres-operacion/registrar-taller', pathMatch: 'full' },
       { path: 'taller/disponibilidad', redirectTo: 'talleres-operacion/disponibilidad', pathMatch: 'full' },
+      { path: 'taller/ubicacion', redirectTo: 'talleres-operacion/ubicacion-taller', pathMatch: 'full' },
       { path: 'taller/tecnicos', redirectTo: 'talleres-operacion/tecnicos', pathMatch: 'full' },
       { path: 'taller/desempeno', redirectTo: 'talleres-operacion/desempeno', pathMatch: 'full' },
       { path: 'taller/trabajo-completado', redirectTo: 'talleres-operacion/trabajo-completado', pathMatch: 'full' },
+      { path: 'tecnico/seguimiento', redirectTo: 'talleres-operacion/seguimiento-tecnico', pathMatch: 'full' },
       { path: 'asignacion/solicitudes', redirectTo: 'atencion-solicitudes/consultar-solicitudes', pathMatch: 'full' },
       { path: 'asignacion/evaluar', redirectTo: 'atencion-solicitudes/evaluar-solicitud', pathMatch: 'full' },
       { path: 'asignacion/asignar', redirectTo: 'atencion-solicitudes/asignar-servicio', pathMatch: 'full' },

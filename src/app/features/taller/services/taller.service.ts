@@ -153,6 +153,29 @@ export interface ServicioActivo {
   cliente?: string | null;
 }
 
+export interface TecnicoServicioAsignado {
+  asignacion_id: string;
+  incidente_id: string;
+  codigo_solicitud: string;
+  estado_servicio: string;
+  cliente_nombre?: string | null;
+  vehiculo_placa?: string | null;
+  tipo_problema?: string | null;
+  tecnico_nombre: string;
+}
+
+export interface TecnicoUbicacionSendRequest {
+  asignacion_id: string;
+  latitud: number;
+  longitud: number;
+}
+
+export interface TecnicoUbicacionSendResponse {
+  mensaje: string;
+  estado_servicio: string;
+  ultima_actualizacion: string;
+}
+
 export interface TallerCreateRequest {
   usuario_id?: string;
   nombre: string;
@@ -278,6 +301,10 @@ export class TallerService {
     return this.http.patch<Taller>(`${this.apiBase}/taller/mi-taller/disponibilidad`, payload);
   }
 
+  actualizarUbicacionMiTaller(latitud: number, longitud: number): Observable<Taller> {
+    return this.actualizarDisponibilidadMiTaller({ latitud, longitud });
+  }
+
   listarTecnicos(): Observable<Tecnico[]> {
     return this.http.get<Tecnico[]>(`${this.apiBase}/taller/mi-taller/tecnicos`);
   }
@@ -331,6 +358,14 @@ export class TallerService {
 
   listarServiciosActivos(): Observable<ServicioActivo[]> {
     return this.http.get<ServicioActivo[]>(`${this.apiBase}/taller/mi-taller/servicios/activos`);
+  }
+
+  listarMisServiciosAsignadosTecnico(): Observable<TecnicoServicioAsignado[]> {
+    return this.http.get<TecnicoServicioAsignado[]>(`${this.apiBase}/tecnico/mis-servicios-asignados`);
+  }
+
+  enviarUbicacionTecnico(payload: TecnicoUbicacionSendRequest): Observable<TecnicoUbicacionSendResponse> {
+    return this.http.post<TecnicoUbicacionSendResponse>(`${this.apiBase}/tecnico/ubicacion`, payload);
   }
 
   obtenerHistorialAtenciones(): Observable<HistorialAtencion[]> {

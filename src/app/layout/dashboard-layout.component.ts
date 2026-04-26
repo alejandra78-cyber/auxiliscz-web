@@ -5,8 +5,16 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../features/auth/services/auth.service';
 
 type UserRole = 'admin' | 'taller' | 'tecnico' | 'cliente' | 'conductor' | '';
-type AccessMode = 'allow' | 'readonly' | 'blocked';
-type ActorLabel = 'Todos' | 'Cliente' | 'Taller' | 'Taller/Técnico' | 'Cliente/Taller' | 'Admin' | 'Taller/Sistema';
+type AccessMode = 'allow' | 'readonly' | 'blocked' | 'unimplemented';
+type ActorLabel =
+  | 'Todos'
+  | 'Cliente'
+  | 'Taller'
+  | 'Técnico'
+  | 'Taller/Técnico'
+  | 'Cliente/Taller'
+  | 'Admin'
+  | 'Taller/Sistema';
 
 interface MenuItem {
   code: string;
@@ -15,6 +23,7 @@ interface MenuItem {
   path: string;
   roles: UserRole[];
   supervision?: boolean;
+  implemented?: boolean;
 }
 
 interface MenuSection {
@@ -45,7 +54,7 @@ interface MenuSection {
           <nav *ngIf="isOpen(section.key)" class="section-items">
             <div *ngFor="let item of section.items" class="item-wrap">
               <a
-                *ngIf="accessOf(item) !== 'blocked'"
+                *ngIf="accessOf(item) === 'allow' || accessOf(item) === 'readonly'"
                 [routerLink]="item.path"
                 [queryParams]="itemQueryParams(item)"
                 routerLinkActive="active"
@@ -60,7 +69,7 @@ interface MenuSection {
                 </small>
               </a>
               <button
-                *ngIf="accessOf(item) === 'blocked'"
+                *ngIf="accessOf(item) === 'blocked' || accessOf(item) === 'unimplemented'"
                 type="button"
                 class="blocked-item"
                 disabled
@@ -69,7 +78,14 @@ interface MenuSection {
                   <strong>{{ item.code }} · {{ item.label }}</strong>
                   <small>{{ item.actor }}</small>
                 </div>
-                <small class="tag blocked" aria-label="Bloqueado" title="Bloqueado">●</small>
+                <small
+                  class="tag"
+                  [class.blocked]="accessOf(item) === 'blocked'"
+                  [attr.aria-label]="accessOf(item) === 'blocked' ? 'Bloqueado' : 'No implementado'"
+                  [attr.title]="accessOf(item) === 'blocked' ? 'Bloqueado' : 'No implementado'"
+                >
+                  {{ accessOf(item) === 'blocked' ? '●' : 'No impl.' }}
+                </small>
               </button>
             </div>
           </nav>
@@ -138,7 +154,6 @@ interface MenuSection {
       margin-top: 6px;
       color: #cad8ff;
       font-size: 12px;
-      letter-spacing: 0.4px;
       text-transform: uppercase;
     }
     .home-link {
@@ -326,11 +341,6 @@ interface MenuSection {
       color: #1f2b45;
       line-height: 1.2;
     }
-    .topbar-sub {
-      margin: 4px 0 0;
-      font-size: 12px;
-      color: #74819a;
-    }
     .role-pill {
       font-size: 12px;
       font-weight: 700;
@@ -410,40 +420,56 @@ export class DashboardLayoutComponent {
 
   private readonly sections: MenuSection[] = [
     {
+      key: 'autenticacion-seguridad',
+      title: 'Autenticación y Seguridad',
+      items: [
+        { code: 'CU01', label: 'Registrarse', actor: 'Cliente', path: '/auth/registrarse', roles: ['cliente', 'conductor'], implemented: false },
+        { code: 'CU02', label: 'Iniciar sesión', actor: 'Todos', path: '/login', roles: ['admin', 'taller', 'tecnico', 'cliente', 'conductor'] },
+        { code: 'CU03', label: 'Cerrar sesión', actor: 'Todos', path: '/inicio', roles: ['admin', 'taller', 'tecnico', 'cliente', 'conductor'] },
+        { code: '', label: 'Gestionar Roles y Permisos', actor: 'Admin', path: '/admin-reportes/roles-permisos', roles: ['admin'] },
+        { code: '', label: 'Recuperar contraseña', actor: 'Todos', path: '/auth/recuperar-password', roles: ['admin', 'taller', 'tecnico', 'cliente', 'conductor'] },
+      ],
+    },
+    {
       key: 'clientes-vehiculos',
       title: 'Gestión de Clientes y Vehículos',
       items: [
-        { code: '', label: 'Registrar vehículos', actor: 'Cliente', path: '/clientes-vehiculos/registrar-vehiculo', roles: ['cliente', 'conductor'] },
-        { code: '', label: 'Estado de solicitud', actor: 'Cliente', path: '/clientes-vehiculos/estado-solicitud', roles: ['cliente', 'conductor'] },
-        { code: '', label: 'Ubicación del técnico', actor: 'Cliente', path: '/clientes-vehiculos/ubicacion-tecnico', roles: ['cliente', 'conductor'] },
+        { code: '', label: 'Registrar vehículos', actor: 'Cliente', path: '/clientes-vehiculos/registrar-vehiculo', roles: ['cliente', 'conductor'], implemented: false },
+        { code: '', label: 'Consultar estado de solicitud', actor: 'Cliente', path: '/clientes-vehiculos/estado-solicitud', roles: ['cliente', 'conductor'], implemented: false },
+        { code: '', label: 'Ver ubicación del técnico', actor: 'Cliente', path: '/clientes-vehiculos/ubicacion-tecnico', roles: ['cliente', 'conductor'], implemented: false },
+        { code: '', label: 'Evaluar servicio', actor: 'Cliente', path: '/clientes-vehiculos/evaluar-servicio', roles: ['cliente', 'conductor'], implemented: false },
+        { code: '', label: 'Consultar historial de servicios', actor: 'Cliente', path: '/clientes-vehiculos/historial-servicios', roles: ['cliente', 'conductor'], implemented: false },
       ],
     },
     {
       key: 'talleres-operacion',
       title: 'Gestión de Talleres y Operación',
       items: [
-        { code: '', label: 'Disponibilidad', actor: 'Taller', path: '/talleres-operacion/disponibilidad', roles: ['taller'], supervision: true },
-        { code: '', label: 'Técnicos', actor: 'Taller', path: '/talleres-operacion/tecnicos', roles: ['taller'], supervision: true },
-        { code: '', label: 'Trabajo completado', actor: 'Taller/Técnico', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico'], supervision: true },
+        { code: '', label: 'Registrar taller', actor: 'Admin', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
+        { code: '', label: 'Gestionar disponibilidad del taller', actor: 'Taller', path: '/talleres-operacion/disponibilidad', roles: ['taller'], supervision: true },
+        { code: '', label: 'Gestionar técnicos', actor: 'Taller', path: '/talleres-operacion/tecnicos', roles: ['taller'], supervision: true },
+        { code: '', label: 'Consultar desempeño del taller', actor: 'Taller', path: '/talleres-operacion/desempeno', roles: ['taller'], supervision: true },
+        { code: '', label: 'Registrar trabajo completado', actor: 'Taller/Técnico', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico'], supervision: true },
+        { code: '', label: 'Compartir ubicación técnica', actor: 'Técnico', path: '/talleres-operacion/seguimiento-tecnico', roles: ['tecnico'] },
       ],
     },
     {
       key: 'registro-emergencias',
       title: 'Registro de Emergencias',
       items: [
-        { code: '', label: 'Reportar emergencia', actor: 'Cliente', path: '/registro-emergencias/reportar-emergencia', roles: ['cliente', 'conductor'] },
-        { code: '', label: 'Cancelar solicitud', actor: 'Cliente', path: '/registro-emergencias/cancelar-solicitud', roles: ['cliente', 'conductor'] },
-        { code: '', label: 'Comunicación y notificaciones', actor: 'Cliente/Taller', path: '/registro-emergencias/comunicacion-notificaciones', roles: ['taller'], supervision: true },
+        { code: '', label: 'Reportar emergencia', actor: 'Cliente', path: '/registro-emergencias/reportar-emergencia', roles: ['cliente', 'conductor'], implemented: false },
+        { code: '', label: 'Cancelar solicitud', actor: 'Cliente', path: '/registro-emergencias/cancelar-solicitud', roles: ['cliente', 'conductor'], implemented: false },
+        { code: '', label: 'Gestionar comunicación y notificaciones', actor: 'Cliente/Taller', path: '/registro-emergencias/comunicacion-notificaciones', roles: ['taller', 'cliente', 'conductor'], supervision: true },
       ],
     },
     {
       key: 'atencion-asignacion',
       title: 'Atención y Asignación de Solicitudes',
       items: [
-        { code: '', label: 'Consultar solicitudes', actor: 'Taller', path: '/atencion-solicitudes/consultar-solicitudes', roles: ['taller'], supervision: true },
-        { code: '', label: 'Evaluar solicitud', actor: 'Taller', path: '/atencion-solicitudes/evaluar-solicitud', roles: ['taller'], supervision: true },
+        { code: '', label: 'Consultar solicitudes de servicio', actor: 'Taller', path: '/atencion-solicitudes/consultar-solicitudes', roles: ['taller'], supervision: true },
+        { code: '', label: 'Evaluar solicitud de servicio', actor: 'Taller', path: '/atencion-solicitudes/evaluar-solicitud', roles: ['taller'], supervision: true },
         { code: '', label: 'Asignar servicio', actor: 'Taller/Sistema', path: '/atencion-solicitudes/asignar-servicio', roles: ['taller'], supervision: true },
-        { code: '', label: 'Actualizar estado', actor: 'Taller', path: '/atencion-solicitudes/actualizar-estado', roles: ['taller'], supervision: true },
+        { code: '', label: 'Actualizar estado del servicio', actor: 'Taller', path: '/atencion-solicitudes/actualizar-estado', roles: ['taller'], supervision: true },
       ],
     },
     {
@@ -452,15 +478,16 @@ export class DashboardLayoutComponent {
       items: [
         { code: '', label: 'Generar cotización', actor: 'Taller', path: '/pagos/generar-cotizacion', roles: ['taller'], supervision: true },
         { code: '', label: 'Gestionar cotización', actor: 'Cliente/Taller', path: '/pagos/gestionar-cotizacion', roles: ['taller', 'cliente', 'conductor'], supervision: true },
-        { code: '', label: 'Procesar pago', actor: 'Cliente', path: '/pagos/procesar-pago', roles: ['cliente', 'conductor'] },
+        { code: '', label: 'Procesar pago', actor: 'Cliente', path: '/pagos/procesar-pago', roles: ['cliente', 'conductor'], implemented: false },
       ],
     },
     {
       key: 'admin-reportes',
       title: 'Administración y Reportes',
       items: [
+        { code: '', label: 'Gestionar usuarios', actor: 'Admin', path: '/admin-reportes/gestionar-usuarios', roles: ['admin'] },
         { code: '', label: 'Aprobar talleres', actor: 'Admin', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
-        { code: '', label: 'Roles y permisos', actor: 'Admin', path: '/admin-reportes/roles-permisos', roles: ['admin'] },
+        { code: '', label: 'Consultar reportes y métricas', actor: 'Admin', path: '/admin-reportes/reportes-metricas', roles: ['admin'] },
       ],
     },
   ];
@@ -507,6 +534,7 @@ export class DashboardLayoutComponent {
   }
 
   accessOf(item: MenuItem): AccessMode {
+    if (item.implemented === false) return 'unimplemented';
     if (this.role && item.roles.includes(this.role)) return 'allow';
     if (this.role === 'admin' && item.supervision) return 'readonly';
     return 'blocked';
