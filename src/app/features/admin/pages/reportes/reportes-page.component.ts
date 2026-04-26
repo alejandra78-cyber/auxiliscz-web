@@ -13,14 +13,23 @@ import { AdminResumen, AdminService } from '../../services/admin.service';
       <p *ngIf="error" class="error">{{ error }}</p>
       <div class="grid" *ngIf="resumen">
         <article><strong>{{ resumen.incidentes.total }}</strong><span>Incidentes totales</span></article>
-        <article><strong>{{ resumen.talleres.total }}</strong><span>Talleres</span></article>
-        <article><strong>{{ resumen.ingresos.total_bs }}</strong><span>Ingresos (Bs)</span></article>
+        <article><strong>{{ resumen.talleres.total }}</strong><span>Talleres registrados</span></article>
+        <article><strong>{{ resumen.talleres.aprobados }}</strong><span>Talleres aprobados</span></article>
+        <article><strong>{{ resumen.servicios_completados }}</strong><span>Servicios completados</span></article>
+        <article><strong>{{ resumen.pagos.pagados }}</strong><span>Pagos confirmados</span></article>
+        <article><strong>{{ resumen.comision_total }}</strong><span>Comisión plataforma (Bs)</span></article>
+      </div>
+      <div class="grid small" *ngIf="resumen">
+        <article><strong>{{ resumen.promedio_calificacion }}</strong><span>Promedio calificación</span></article>
+        <article><strong>{{ resumen.incidentes.hoy }}</strong><span>Incidentes hoy</span></article>
+        <article><strong>{{ resumen.incidentes.este_mes }}</strong><span>Incidentes este mes</span></article>
       </div>
     </section>
   `,
   styles: [`
     .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
     .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:12px; }
+    .small { margin-top:10px; }
     article { background:#f8faff; border:1px solid #e6ebf8; border-radius:10px; padding:12px; }
     strong { display:block; font-size:22px; color:#1f3a7a; }
     span { color:#6d7890; font-size:13px; }

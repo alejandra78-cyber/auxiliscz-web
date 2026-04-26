@@ -77,12 +77,24 @@ import { AsignacionService, SolicitudServicio, TecnicoDisponible } from '../../s
   `],
 })
 export class ActualizarEstadoPageComponent implements OnInit {
-  readonly flujoEstados = ['pendiente_respuesta', 'aceptada', 'tecnico_asignado', 'en_camino', 'en_proceso', 'atendido', 'finalizado'];
+  readonly flujoEstados = [
+    'pendiente_respuesta',
+    'aceptada',
+    'tecnico_asignado',
+    'en_camino',
+    'en_diagnostico',
+    'diagnostico_completado',
+    'en_proceso',
+    'atendido',
+    'finalizado',
+  ];
   private readonly transiciones: Record<string, string[]> = {
     pendiente_respuesta: ['aceptada'],
     aceptada: ['tecnico_asignado', 'cancelado'],
     tecnico_asignado: ['en_camino', 'cancelado'],
-    en_camino: ['en_proceso', 'cancelado'],
+    en_camino: ['en_diagnostico', 'en_proceso', 'cancelado'],
+    en_diagnostico: ['diagnostico_completado', 'cancelado'],
+    diagnostico_completado: ['en_proceso', 'cancelado'],
     en_proceso: ['atendido', 'cancelado'],
     atendido: ['finalizado'],
     finalizado: [],
@@ -127,7 +139,7 @@ export class ActualizarEstadoPageComponent implements OnInit {
   get habilitaCu19(): boolean {
     if (!this.seleccionada) return false;
     const estado = this.estadoActual(this.seleccionada);
-    return ['tecnico_asignado', 'en_camino', 'en_proceso', 'atendido'].includes(estado);
+    return ['tecnico_asignado', 'en_camino', 'en_diagnostico', 'diagnostico_completado', 'en_proceso', 'atendido'].includes(estado);
   }
 
   estadoActual(s: SolicitudServicio): string {
@@ -154,7 +166,7 @@ export class ActualizarEstadoPageComponent implements OnInit {
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
         this.solicitudesOperativas = rows.filter((s) =>
-          ['aceptada', 'tecnico_asignado', 'en_camino', 'en_proceso', 'atendido', 'asignada', 'aceptado'].includes(
+          ['aceptada', 'tecnico_asignado', 'en_camino', 'en_diagnostico', 'diagnostico_completado', 'en_proceso', 'atendido', 'asignada', 'aceptado'].includes(
             this.estadoActual(s),
           ),
         );

@@ -16,9 +16,12 @@ import { EvaluarSolicitudPageComponent } from './app/features/asignacion/pages/e
 import { AsignarServicioPageComponent } from './app/features/asignacion/pages/asignar-servicio/asignar-servicio-page.component';
 import { ActualizarEstadoPageComponent } from './app/features/asignacion/pages/actualizar-estado/actualizar-estado-page.component';
 import { ComunicacionPageComponent } from './app/features/emergencia/pages/comunicacion/comunicacion-page.component';
+import { CotizacionesPageComponent } from './app/features/pagos/pages/cotizaciones/cotizaciones-page.component';
 import { PackagePlaceholderPageComponent } from './app/shared/pages/package-placeholder-page.component';
 import { AprobarTalleresPageComponent } from './app/features/admin/pages/aprobar-talleres/aprobar-talleres-page.component';
 import { RegistrarTallerPageComponent } from './app/features/taller/pages/registrar-taller/registrar-taller-page.component';
+import { UsuariosPageComponent } from './app/features/admin/pages/usuarios/usuarios-page.component';
+import { ReportesPageComponent } from './app/features/admin/pages/reportes/reportes-page.component';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -133,14 +136,14 @@ export const appRoutes: Routes = [
       // Pagos
       {
         path: 'pagos/generar-cotizacion',
-        component: PackagePlaceholderPageComponent,
+        component: CotizacionesPageComponent,
         canActivate: [roleGuard(['taller', 'admin'])],
         data: { title: 'CU20 · Generar cotización', description: 'Paquete: Pagos' },
       },
       {
         path: 'pagos/gestionar-cotizacion',
-        component: PackagePlaceholderPageComponent,
-        canActivate: [roleGuard(['taller', 'admin'])],
+        component: CotizacionesPageComponent,
+        canActivate: [roleGuard(['taller', 'admin', 'cliente', 'conductor'])],
         data: { title: 'CU21 · Gestionar cotización', description: 'Paquete: Pagos' },
       },
       {
@@ -158,9 +161,8 @@ export const appRoutes: Routes = [
       },
       {
         path: 'admin-reportes/gestionar-usuarios',
-        component: PackagePlaceholderPageComponent,
+        component: UsuariosPageComponent,
         canActivate: [roleGuard(['admin'])],
-        data: { title: 'CU26 · Gestionar usuarios', description: 'Paquete: Administración y Reportes' },
       },
       {
         path: 'admin-reportes/aprobar-talleres',
@@ -169,9 +171,8 @@ export const appRoutes: Routes = [
       },
       {
         path: 'admin-reportes/reportes-metricas',
-        component: PackagePlaceholderPageComponent,
+        component: ReportesPageComponent,
         canActivate: [roleGuard(['admin'])],
-        data: { title: 'CU28 · Reportes y métricas', description: 'Paquete: Administración y Reportes' },
       },
 
       // Compatibilidad rutas antiguas
