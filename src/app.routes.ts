@@ -8,20 +8,28 @@ import { RecoverPasswordPageComponent } from './app/features/auth/pages/recover-
 import { RolesPermisosPageComponent } from './app/features/admin/pages/roles-permisos/roles-permisos-page.component';
 import { InicioPageComponent } from './app/features/admin/pages/inicio/inicio-page.component';
 import { DisponibilidadPageComponent } from './app/features/taller/pages/disponibilidad/disponibilidad-page.component';
-import { RegistrarTallerPageComponent } from './app/features/taller/pages/registrar-taller/registrar-taller-page.component';
 import { TecnicosPageComponent } from './app/features/taller/pages/tecnicos/tecnicos-page.component';
 import { DesempenoPageComponent } from './app/features/taller/pages/desempeno/desempeno-page.component';
 import { TrabajoCompletadoPageComponent } from './app/features/taller/pages/trabajo-completado/trabajo-completado-page.component';
+import { SeguimientoTecnicoPageComponent } from './app/features/taller/pages/seguimiento-tecnico/seguimiento-tecnico-page.component';
+import { UbicacionTallerPageComponent } from './app/features/taller/pages/ubicacion-taller/ubicacion-taller-page.component';
 import { SolicitudesPageComponent } from './app/features/asignacion/pages/solicitudes/solicitudes-page.component';
 import { EvaluarSolicitudPageComponent } from './app/features/asignacion/pages/evaluar-solicitud/evaluar-solicitud-page.component';
 import { AsignarServicioPageComponent } from './app/features/asignacion/pages/asignar-servicio/asignar-servicio-page.component';
 import { ActualizarEstadoPageComponent } from './app/features/asignacion/pages/actualizar-estado/actualizar-estado-page.component';
 import { ComunicacionPageComponent } from './app/features/emergencia/pages/comunicacion/comunicacion-page.component';
+import { CotizacionesPageComponent } from './app/features/pagos/pages/cotizaciones/cotizaciones-page.component';
 import { PackagePlaceholderPageComponent } from './app/shared/pages/package-placeholder-page.component';
+import { AprobarTalleresPageComponent } from './app/features/admin/pages/aprobar-talleres/aprobar-talleres-page.component';
+import { RegistrarTallerPageComponent } from './app/features/taller/pages/registrar-taller/registrar-taller-page.component';
+import { UsuariosPageComponent } from './app/features/admin/pages/usuarios/usuarios-page.component';
+import { ReportesPageComponent } from './app/features/admin/pages/reportes/reportes-page.component';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
+  { path: 'registrar-taller', component: RegistrarTallerPageComponent },
+  { path: 'solicitar-afiliacion-taller', redirectTo: 'registrar-taller', pathMatch: 'full' },
   { path: 'recover-password', component: RecoverPasswordPageComponent },
   { path: 'auth/recuperar-password', component: RecoverPasswordPageComponent },
   {
@@ -64,14 +72,15 @@ export const appRoutes: Routes = [
       },
 
       // Gestión de Talleres y Operación
-      {
-        path: 'talleres-operacion/registrar-taller',
-        component: RegistrarTallerPageComponent,
-        canActivate: [roleGuard(['admin'])],
-      },
+      { path: 'talleres-operacion/registrar-taller', redirectTo: 'admin-reportes/aprobar-talleres', pathMatch: 'full' },
       {
         path: 'talleres-operacion/disponibilidad',
         component: DisponibilidadPageComponent,
+        canActivate: [roleGuard(['taller', 'admin'])],
+      },
+      {
+        path: 'talleres-operacion/ubicacion-taller',
+        component: UbicacionTallerPageComponent,
         canActivate: [roleGuard(['taller', 'admin'])],
       },
       {
@@ -89,6 +98,11 @@ export const appRoutes: Routes = [
         component: TrabajoCompletadoPageComponent,
         canActivate: [roleGuard(['taller', 'tecnico', 'admin'])],
       },
+      {
+        path: 'talleres-operacion/seguimiento-tecnico',
+        component: SeguimientoTecnicoPageComponent,
+        canActivate: [roleGuard(['tecnico'])],
+      },
 
       // Registro de Emergencias
       {
@@ -101,7 +115,7 @@ export const appRoutes: Routes = [
         path: 'registro-emergencias/cancelar-solicitud',
         component: PackagePlaceholderPageComponent,
         canActivate: [roleGuard(['cliente', 'conductor', 'admin'])],
-        data: { title: 'CU12 · Cancelar solicitud', description: 'Paquete: Registro de Emergencias' },
+        data: { title: 'Cancelar solicitud', description: 'Paquete: Registro de Emergencias' },
       },
       {
         path: 'registro-emergencias/comunicacion-notificaciones',
@@ -134,14 +148,14 @@ export const appRoutes: Routes = [
       // Pagos
       {
         path: 'pagos/generar-cotizacion',
-        component: PackagePlaceholderPageComponent,
+        component: CotizacionesPageComponent,
         canActivate: [roleGuard(['taller', 'admin'])],
         data: { title: 'CU20 · Generar cotización', description: 'Paquete: Pagos' },
       },
       {
         path: 'pagos/gestionar-cotizacion',
-        component: PackagePlaceholderPageComponent,
-        canActivate: [roleGuard(['taller', 'admin'])],
+        component: CotizacionesPageComponent,
+        canActivate: [roleGuard(['taller', 'admin', 'cliente', 'conductor'])],
         data: { title: 'CU21 · Gestionar cotización', description: 'Paquete: Pagos' },
       },
       {
@@ -159,30 +173,29 @@ export const appRoutes: Routes = [
       },
       {
         path: 'admin-reportes/gestionar-usuarios',
-        component: PackagePlaceholderPageComponent,
+        component: UsuariosPageComponent,
         canActivate: [roleGuard(['admin'])],
-        data: { title: 'CU26 · Gestionar usuarios', description: 'Paquete: Administración y Reportes' },
       },
       {
         path: 'admin-reportes/aprobar-talleres',
-        component: PackagePlaceholderPageComponent,
+        component: AprobarTalleresPageComponent,
         canActivate: [roleGuard(['admin'])],
-        data: { title: 'CU27 · Aprobar talleres', description: 'Paquete: Administración y Reportes' },
       },
       {
         path: 'admin-reportes/reportes-metricas',
-        component: PackagePlaceholderPageComponent,
+        component: ReportesPageComponent,
         canActivate: [roleGuard(['admin'])],
-        data: { title: 'CU28 · Reportes y métricas', description: 'Paquete: Administración y Reportes' },
       },
 
       // Compatibilidad rutas antiguas
       { path: 'dashboard', redirectTo: '/inicio', pathMatch: 'full' },
       { path: 'taller/registrar', redirectTo: 'talleres-operacion/registrar-taller', pathMatch: 'full' },
       { path: 'taller/disponibilidad', redirectTo: 'talleres-operacion/disponibilidad', pathMatch: 'full' },
+      { path: 'taller/ubicacion', redirectTo: 'talleres-operacion/ubicacion-taller', pathMatch: 'full' },
       { path: 'taller/tecnicos', redirectTo: 'talleres-operacion/tecnicos', pathMatch: 'full' },
       { path: 'taller/desempeno', redirectTo: 'talleres-operacion/desempeno', pathMatch: 'full' },
       { path: 'taller/trabajo-completado', redirectTo: 'talleres-operacion/trabajo-completado', pathMatch: 'full' },
+      { path: 'tecnico/seguimiento', redirectTo: 'talleres-operacion/seguimiento-tecnico', pathMatch: 'full' },
       { path: 'asignacion/solicitudes', redirectTo: 'atencion-solicitudes/consultar-solicitudes', pathMatch: 'full' },
       { path: 'asignacion/evaluar', redirectTo: 'atencion-solicitudes/evaluar-solicitud', pathMatch: 'full' },
       { path: 'asignacion/asignar', redirectTo: 'atencion-solicitudes/asignar-servicio', pathMatch: 'full' },

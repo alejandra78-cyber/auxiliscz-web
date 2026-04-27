@@ -30,19 +30,21 @@ import { AdminUserListItem, AuthService } from '../../../auth/services/auth.serv
       <section class="users-block">
         <h3>Usuarios creados</h3>
         <p *ngIf="loadingUsuarios">Cargando usuarios...</p>
-        <table *ngIf="usuarios.length">
-          <thead>
-            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acción</th></tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let u of usuarios">
-              <td>{{ u.nombre }}</td>
-              <td>{{ u.email }}</td>
-              <td>{{ u.rol }}</td>
-              <td><button type="button" (click)="seleccionarUsuario(u.id)">Seleccionar</button></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrap" *ngIf="usuarios.length">
+          <table>
+            <thead>
+              <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acción</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let u of usuarios">
+                <td>{{ u.nombre }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.rol }}</td>
+                <td><button type="button" (click)="seleccionarUsuario(u.id)">Seleccionar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <p *ngIf="!loadingUsuarios && !usuarios.length">No hay usuarios registrados.</p>
       </section>
 
@@ -77,12 +79,18 @@ import { AdminUserListItem, AuthService } from '../../../auth/services/auth.serv
     .permisos { margin: 12px 0; padding-left: 16px; }
     .users-block { margin-top: 14px; }
     table { width:100%; border-collapse: collapse; margin-top:8px; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table-wrap table { min-width: 620px; }
     th, td { border-bottom:1px solid #eef1f6; padding:8px; text-align:left; }
     th { color:#1f3a7a; }
     td button { padding:6px 10px; font-size:12px; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
     h3 { margin: 10px 0 0; }
+    @media (max-width: 900px) {
+      .card { padding: 12px; }
+      .form-grid button { width: 100%; }
+    }
   `],
 })
 export class RolesPermisosPageComponent implements OnInit {

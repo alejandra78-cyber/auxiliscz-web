@@ -45,11 +45,15 @@ import { ServicioActivo, TallerService } from '../../services/taller.service';
     </section>
   `,
   styles: [`
-    .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
+    .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; min-width: 0; }
     .grid { display:grid; gap:8px; }
     .ok { color:#027a48; }
     .error { color:#b42318; }
     .muted { color:#6d7890; }
+    @media (max-width: 900px) {
+      .card { padding: 12px; }
+      .grid button { width: 100%; }
+    }
   `],
 })
 export class TrabajoCompletadoPageComponent implements OnInit {
