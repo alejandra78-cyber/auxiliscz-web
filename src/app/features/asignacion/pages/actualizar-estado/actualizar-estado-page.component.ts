@@ -46,9 +46,6 @@ import { AsignacionService, SolicitudServicio, TecnicoDisponible } from '../../s
         <label>Observación</label>
         <textarea rows="3" formControlName="observacion" placeholder="Comentario del cambio de estado"></textarea>
 
-        <label>Costo (opcional)</label>
-        <input type="number" formControlName="costo" />
-
         <button type="submit" [disabled]="loading || form.invalid">
           {{ loading ? 'Guardando...' : 'Actualizar estado' }}
         </button>
@@ -56,6 +53,7 @@ import { AsignacionService, SolicitudServicio, TecnicoDisponible } from '../../s
 
       <p *ngIf="habilitaCu18" class="hint-ok">Este servicio ya puede pasar a CU18 Registrar trabajo completado.</p>
       <p *ngIf="habilitaCu19" class="hint-info">CU19 habilitado: el cliente puede ver ubicación del técnico.</p>
+      <p *ngIf="habilitaCu20" class="hint-info">Diagnóstico completado. Ya puede generar una cotización (CU20).</p>
 
       <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
@@ -114,7 +112,6 @@ export class ActualizarEstadoPageComponent implements OnInit {
     estado: ['', [Validators.required]],
     tecnicoId: [''],
     observacion: [''],
-    costo: [0],
   });
 
   constructor(
@@ -140,6 +137,11 @@ export class ActualizarEstadoPageComponent implements OnInit {
     if (!this.seleccionada) return false;
     const estado = this.estadoActual(this.seleccionada);
     return ['tecnico_asignado', 'en_camino', 'en_diagnostico', 'diagnostico_completado', 'en_proceso', 'atendido'].includes(estado);
+  }
+
+  get habilitaCu20(): boolean {
+    if (!this.seleccionada) return false;
+    return this.estadoActual(this.seleccionada) === 'diagnostico_completado';
   }
 
   estadoActual(s: SolicitudServicio): string {
@@ -217,20 +219,18 @@ export class ActualizarEstadoPageComponent implements OnInit {
     this.ok = '';
     this.error = '';
     const raw = this.form.getRawValue();
-    const costo = Number(raw.costo) > 0 ? Number(raw.costo) : undefined;
     this.asignacionService
       .actualizarEstadoServicio(
         raw.solicitudId,
         raw.estado,
         raw.observacion || undefined,
         raw.tecnicoId || undefined,
-        costo,
       )
       .subscribe({
         next: (res) => {
           this.loading = false;
           this.ok = `Estado actualizado a ${res.estado}`;
-          this.form.patchValue({ solicitudId: '', estado: '', tecnicoId: '', observacion: '', costo: 0 });
+          this.form.patchValue({ solicitudId: '', estado: '', tecnicoId: '', observacion: '' });
           this.estadosSiguientes = [];
           this.seleccionada = null;
           this.tecnicos = [];

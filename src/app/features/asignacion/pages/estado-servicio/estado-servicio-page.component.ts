@@ -31,8 +31,6 @@ import { AsignacionService } from '../../services/asignacion.service';
           <option value="en_proceso">en_proceso</option>
           <option value="cancelada">cancelada</option>
         </select>
-        <label>Costo (solo si atendido)</label>
-        <input type="number" formControlName="costo" />
         <small class="hint">Nota: el cierre en <b>completada</b> se realiza en la vista "Trabajo completado".</small>
         <button type="submit" [disabled]="form.invalid || loading">{{ loading ? 'Guardando...' : 'Ejecutar' }}</button>
       </form>
@@ -59,7 +57,6 @@ export class EstadoServicioPageComponent {
     observacion: [''],
     tecnicoId: [''],
     estado: ['en_proceso', [Validators.required]],
-    costo: [0],
   });
 
   constructor(
@@ -73,7 +70,6 @@ export class EstadoServicioPageComponent {
     this.ok = '';
     this.error = '';
     const raw = this.form.getRawValue();
-    const costo = Number(raw.costo) > 0 ? Number(raw.costo) : undefined;
     const done = (msg: string) => {
       this.loading = false;
       this.ok = msg;
@@ -104,7 +100,7 @@ export class EstadoServicioPageComponent {
       });
       return;
     }
-    this.asignacionService.actualizarEstado(raw.incidenteId, raw.estado, costo, raw.observacion || undefined).subscribe({
+    this.asignacionService.actualizarEstado(raw.incidenteId, raw.estado, undefined, raw.observacion || undefined).subscribe({
       next: () => done('Estado actualizado correctamente'),
       error: fail,
     });

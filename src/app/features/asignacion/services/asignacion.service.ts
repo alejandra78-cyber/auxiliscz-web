@@ -39,6 +39,7 @@ export interface EvidenciaSolicitud {
   tipo: string;
   url_archivo?: string | null;
   transcripcion?: string | null;
+  metadata_json?: string | null;
   subido_en?: string | null;
 }
 
@@ -149,10 +150,9 @@ export class AsignacionService {
     });
   }
 
-  actualizarEstado(incidenteId: string, estado: string, costo?: number, observacion?: string): Observable<SolicitudServicio> {
+  actualizarEstado(incidenteId: string, estado: string, _costo?: number, observacion?: string): Observable<SolicitudServicio> {
     return this.http.patch<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/estado`, {
       estado,
-      costo,
       observacion,
     });
   }
@@ -162,13 +162,12 @@ export class AsignacionService {
     estado: string,
     observacion?: string,
     tecnicoId?: string,
-    costo?: number,
+    _costo?: number,
   ): Observable<SolicitudServicio> {
     return this.http.patch<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/estado`, {
       estado,
       observacion,
       tecnico_id: tecnicoId,
-      costo,
     });
   }
 

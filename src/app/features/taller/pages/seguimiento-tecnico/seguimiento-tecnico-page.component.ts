@@ -39,7 +39,7 @@ import {
       <p *ngIf="ultimaUbicacion" class="muted">Última ubicación enviada: {{ ultimaUbicacion }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
       <p *ngIf="!loading && !servicios.length" class="muted">
-        No tienes servicios en estado tecnico_asignado, en_camino o en_proceso.
+        No tienes servicios en estado en_camino o en_proceso para compartir ubicación.
       </p>
     </section>
   `,
@@ -161,4 +161,3 @@ export class SeguimientoTecnicoPageComponent implements OnInit, OnDestroy {
       });
   }
 }
-

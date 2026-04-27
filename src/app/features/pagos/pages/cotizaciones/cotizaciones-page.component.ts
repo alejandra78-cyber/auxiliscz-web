@@ -141,12 +141,25 @@ export class CotizacionesPageComponent implements OnInit {
     this.cargarCotizaciones();
   }
 
+  private normalizarEstadoAsignacion(estado?: string | null): string {
+    const raw = (estado || '').trim().toLowerCase();
+    const aliases: Record<string, string> = {
+      asignada: 'tecnico_asignado',
+      aceptado: 'aceptada',
+      cancelada: 'cancelado',
+      completada: 'finalizado',
+    };
+    return aliases[raw] || raw;
+  }
+
   cargarSolicitudesDiagnostico(): void {
     this.error = '';
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
         this.solicitudesDiagnostico = (rows || []).filter((s) =>
-          ['en_diagnostico', 'diagnostico_completado', 'en_proceso'].includes((s.estado || '').toLowerCase()),
+          ['en_diagnostico', 'diagnostico_completado'].includes(
+            this.normalizarEstadoAsignacion(s.estado_asignacion || s.estado),
+          ),
         );
       },
       error: (err) => {
@@ -197,7 +210,10 @@ export class CotizacionesPageComponent implements OnInit {
         },
         error: (err) => {
           this.loading = false;
-          this.error = err?.error?.detail ?? 'No se pudo generar cotización';
+          const detail = err?.error?.detail;
+          this.error = Array.isArray(detail)
+            ? detail.map((d: any) => d?.msg || String(d)).join(' | ')
+            : (detail || 'No se pudo generar cotización');
         },
       });
   }
