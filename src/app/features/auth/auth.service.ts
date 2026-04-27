@@ -63,6 +63,15 @@ export interface ResetPasswordRequest {
   nueva_password: string;
 }
 
+export interface ValidateResetTokenRequest {
+  reset_token: string;
+}
+
+export interface ValidateResetTokenResponse {
+  ok: boolean;
+  mensaje: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly tokenKey = 'access_token';
@@ -98,6 +107,10 @@ export class AuthService {
 
   requestPasswordRecovery(payload: RecoverPasswordRequest): Observable<RecoverPasswordResponse> {
     return this.http.post<RecoverPasswordResponse>(`${this.apiBase}/auth/password/recovery-request`, payload);
+  }
+
+  validateResetToken(payload: ValidateResetTokenRequest): Observable<ValidateResetTokenResponse> {
+    return this.http.post<ValidateResetTokenResponse>(`${this.apiBase}/auth/password/validate-token`, payload);
   }
 
   resetPassword(payload: ResetPasswordRequest): Observable<{ ok: boolean; mensaje: string }> {

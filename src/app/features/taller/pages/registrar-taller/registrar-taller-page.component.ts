@@ -1,83 +1,139 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { divIcon, latLng, LeafletMouseEvent, Map, marker, Marker, tileLayer } from 'leaflet';
 
 import { TallerService } from '../../services/taller.service';
-import { AdminUserListItem, AuthService } from '../../../auth/services/auth.service';
 
 @Component({
   selector: 'app-registrar-taller-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <section class="card">
-      <h2>Registrar Taller (Admin)</h2>
+    <div class="shell">
+      <section class="card">
+        <header class="head">
+          <p class="eyebrow">Afiliación de Taller</p>
+          <h1>Solicitar Registro del Taller</h1>
+          <p>
+            Completa el formulario para registrar tu solicitud. Un administrador revisará y te notificará el resultado.
+          </p>
+        </header>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" class="grid">
-        <label>Usuario del taller (rol taller, sin perfil)</label>
-        <select formControlName="usuario_id">
-          <option value="" disabled>Selecciona un usuario</option>
-          <option *ngFor="let u of usuarios" [value]="u.id">
-            {{ u.nombre }} ({{ u.email }}) - {{ u.rol }}
-          </option>
-        </select>
-        <p class="hint" *ngIf="cargandoUsuarios">Cargando usuarios...</p>
-        <p class="hint" *ngIf="!cargandoUsuarios && !usuarios.length">
-          No hay usuarios candidatos. Primero cambia el rol a "taller" en Roles y permisos.
-        </p>
+        <form [formGroup]="form" (ngSubmit)="submit()" class="grid">
+          <label>Nombre del taller <input type="text" formControlName="nombre_taller" /></label>
+          <label>Nombre del responsable <input type="text" formControlName="responsable_nombre" /></label>
+          <label>Email <input type="email" formControlName="responsable_email" /></label>
+          <label>Teléfono <input type="text" formControlName="responsable_telefono" /></label>
+          <label class="span-2">Dirección <input type="text" formControlName="direccion" /></label>
+          <div class="span-2 service-box">
+            <label class="service-label">Servicios que ofrece</label>
+            <div class="service-grid">
+              <label class="check" *ngFor="let s of serviciosCatalogo">
+                <input type="checkbox" [checked]="serviciosSeleccionados.has(s)" (change)="toggleServicio(s, $any($event.target).checked)" />
+                <span>{{ s }}</span>
+              </label>
+            </div>
+            <label>
+              Otros servicios (opcional, separados por coma)
+              <input type="text" formControlName="servicios_otro" placeholder="Ej: alineación, pintura, escáner" />
+            </label>
+          </div>
+          <label class="span-2">Descripción del negocio <textarea rows="3" formControlName="descripcion"></textarea></label>
 
-        <label>Nombre de taller</label>
-        <input type="text" formControlName="nombre" />
+          <div class="map-box span-2">
+            <div class="map-head">
+              <h3>Ubicación</h3>
+              <button type="button" class="secondary" (click)="buscarEnMapa()" [disabled]="buscandoDireccion">
+                {{ buscandoDireccion ? 'Buscando...' : 'Buscar dirección' }}
+              </button>
+            </div>
+            <div class="coords">
+              <label>Latitud <input type="number" formControlName="latitud" readonly /></label>
+              <label>Longitud <input type="number" formControlName="longitud" readonly /></label>
+            </div>
+            <div class="map-wrap"><div id="solicitud-map" class="map"></div></div>
+            <p class="hint">Puedes mover el pin o hacer clic para ajustar la ubicación.</p>
+          </div>
 
-        <label>Dirección</label>
-        <input type="text" formControlName="direccion" />
-        <button type="button" class="secondary" (click)="buscarEnMapa()" [disabled]="buscandoDireccion">
-          {{ buscandoDireccion ? 'Buscando...' : 'Buscar en mapa' }}
-        </button>
+          <button type="submit" [disabled]="loading || form.invalid">
+            {{ loading ? 'Enviando...' : 'Enviar solicitud' }}
+          </button>
+          <a routerLink="/login" class="link">Volver a iniciar sesión</a>
+        </form>
 
-        <label>Latitud</label>
-        <input type="number" formControlName="latitud" readonly />
-
-        <label>Longitud</label>
-        <input type="number" formControlName="longitud" readonly />
-
-        <label>Servicios (coma separado)</label>
-        <input type="text" formControlName="servicios" />
-
-        <label class="inline">
-          <input type="checkbox" formControlName="disponible" /> Disponible
-        </label>
-
-        <button type="submit" [disabled]="loading || form.invalid">{{ loading ? 'Guardando...' : 'Registrar taller' }}</button>
-      </form>
-
-      <p *ngIf="ok" class="ok">{{ ok }}</p>
-      <p *ngIf="error" class="error">{{ error }}</p>
-
-      <div class="map-section">
-        <h3>Ubicación del taller</h3>
-        <div class="map-wrapper">
-          <div id="taller-map" class="map"></div>
-        </div>
-        <p class="hint">Tip: busca por dirección y luego ajusta con clic o arrastrando el marcador.</p>
-        <p class="coords" *ngIf="coordenadasSeleccionadas">
-          Punto seleccionado: {{ coordenadasSeleccionadas }}
-        </p>
-      </div>
-    </section>
+        <p class="ok" *ngIf="ok">{{ ok }}</p>
+        <p class="error" *ngIf="error">{{ error }}</p>
+      </section>
+    </div>
   `,
   styles: [`
-    .card { max-width: 760px; background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
-    .map-section { margin: 8px 0 14px; }
-    .map-section h3 { margin: 0 0 8px; font-size: 16px; color:#1f3a7a; }
-    .grid { display:grid; gap:8px; }
-    .map-wrapper { margin: 6px 0 2px; border:1px solid #e2e6ef; border-radius:10px; overflow:hidden; }
-    .map { height: 460px; width: 100%; background:#eef2fb; cursor: crosshair; }
-    .hint { margin: 0 0 6px; color:#6d7890; font-size: 13px; }
-    .coords { margin: 0; color:#1f3a7a; font-size:13px; font-weight:600; }
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f4f7ff, #f0f8f3);
+      padding: 20px;
+    }
+    .card {
+      width: min(920px, 100%);
+      background: #fff;
+      border: 1px solid #deE7f8;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(22, 34, 57, 0.08);
+      display: grid;
+      gap: 12px;
+    }
+    .head h1 { margin: 0; color: #1f2b45; font-size: 30px; }
+    .head p { margin: 6px 0 0; color: #5b6881; }
+    .eyebrow { margin: 0; color: #165a90; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .span-2 { grid-column: 1 / -1; }
+    label { display:grid; gap: 6px; font-weight: 600; font-size: 13px; color: #213454; }
+    textarea { resize: vertical; }
+    .service-box {
+      background: #f9fbff;
+      border: 1px solid #dce5f7;
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+    .service-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1f3a7a;
+    }
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      color: #2b3f63;
+      background: #fff;
+      border: 1px solid #dfe8fa;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .check input {
+      width: 16px;
+      height: 16px;
+    }
+    .map-box { background: #f9fbff; border: 1px solid #dce5f7; border-radius: 12px; padding: 10px; display: grid; gap: 8px; }
+    .map-head { display:flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .map-head h3 { margin: 0; font-size: 16px; color: #1f3a7a; }
+    .coords { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .map-wrap { border-radius: 10px; overflow: hidden; border: 1px solid #d7e2f5; }
+    .map { height: 320px; width: 100%; background: #eef2fb; cursor: crosshair; }
     :host ::ng-deep .pin-dot {
       width: 18px;
       height: 18px;
@@ -86,44 +142,62 @@ import { AdminUserListItem, AuthService } from '../../../auth/services/auth.serv
       border: 3px solid #fff;
       box-shadow: 0 0 0 2px #e24b4a;
     }
-    .secondary { background:#f0f4ff; color:#1f3a7a; border:1px solid #ccd8f5; }
-    .inline { display:flex; align-items:center; gap:8px; margin: 6px 0; }
-    .ok { color:#027a48; }
-    .error { color:#b42318; }
+    .secondary { background:#edf3ff; color:#1f3a7a; border:1px solid #d2def8; }
+    .link { text-align: center; align-self: center; color: #1f3a7a; text-decoration: none; font-weight: 600; }
+    .hint { margin: 0; font-size: 12px; color: #67758f; }
+    .ok { margin: 0; color: #067647; font-weight: 600; }
+    .error { margin: 0; color: #b42318; font-weight: 600; }
+    @media (max-width: 860px) {
+      .card { padding: 14px; }
+      .head h1 { font-size: 24px; }
+      .grid { grid-template-columns: 1fr; }
+      .coords { grid-template-columns: 1fr; }
+      .service-grid { grid-template-columns: 1fr 1fr; }
+      .map-head { flex-direction: column; align-items: stretch; }
+      .map-head button { width: 100%; }
+      .map { height: 270px; }
+    }
   `],
 })
-export class RegistrarTallerPageComponent implements OnInit, AfterViewInit, OnDestroy {
+export class RegistrarTallerPageComponent implements AfterViewInit, OnDestroy {
   loading = false;
   buscandoDireccion = false;
-  cargandoUsuarios = false;
   ok = '';
   error = '';
-  coordenadasSeleccionadas = '';
-  usuarios: AdminUserListItem[] = [];
   private map: Map | null = null;
   private pointMarker: Marker | null = null;
   private readonly subs = new Subscription();
 
+  readonly serviciosCatalogo = [
+    'Cambio de llanta',
+    'Batería',
+    'Remolque / Grúa',
+    'Auxilio de combustible',
+    'Cerrajería automotriz',
+    'Diagnóstico eléctrico',
+    'Arranque de emergencia',
+    'Mecánica rápida',
+    'Frenos',
+  ];
+  readonly serviciosSeleccionados = new Set<string>(['Cambio de llanta', 'Batería', 'Arranque de emergencia']);
+
   readonly form = this.fb.nonNullable.group({
-    usuario_id: ['', [Validators.required]],
-    nombre: ['', [Validators.required, Validators.minLength(3)]],
+    nombre_taller: ['', [Validators.required, Validators.minLength(3)]],
+    responsable_nombre: ['', [Validators.required, Validators.minLength(3)]],
+    responsable_email: ['', [Validators.required, Validators.email]],
+    responsable_telefono: ['', [Validators.required, Validators.minLength(6)]],
     direccion: ['', [Validators.required]],
     latitud: [-17.7833],
     longitud: [-63.1821],
-    servicios: ['llanta,motor,bateria'],
-    disponible: [true],
+    servicios_otro: [''],
+    descripcion: [''],
   });
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly http: HttpClient,
     private readonly tallerService: TallerService,
-    private readonly authService: AuthService,
   ) {}
-
-  ngOnInit(): void {
-    this.cargarUsuarios();
-  }
 
   ngAfterViewInit(): void {
     this.initMap();
@@ -135,66 +209,39 @@ export class RegistrarTallerPageComponent implements OnInit, AfterViewInit, OnDe
     this.map?.remove();
   }
 
-  private cargarUsuarios(): void {
-    this.cargandoUsuarios = true;
-    const sub = this.authService.listTallerCandidates().subscribe({
-      next: (res) => {
-        this.cargandoUsuarios = false;
-        this.usuarios = res ?? [];
-      },
-      error: () => {
-        this.cargandoUsuarios = false;
-      },
-    });
-    this.subs.add(sub);
-  }
-
   private initMap(): void {
     if (this.map) return;
-
-    this.map = new Map('taller-map', {
-      zoomControl: true,
-      preferCanvas: true,
-    }).setView(
+    this.map = new Map('solicitud-map', { zoomControl: true, preferCanvas: true }).setView(
       [this.form.controls.latitud.value, this.form.controls.longitud.value],
       13,
     );
-
     tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       updateWhenIdle: true,
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
-
     const defaultIcon = divIcon({
       className: '',
       html: '<div class="pin-dot"></div>',
       iconSize: [18, 18],
       iconAnchor: [9, 9],
     });
-
     this.pointMarker = marker(
       [this.form.controls.latitud.value, this.form.controls.longitud.value],
       { draggable: true, icon: defaultIcon },
     ).addTo(this.map);
-
     this.pointMarker.on('dragend', () => {
       const pos = this.pointMarker?.getLatLng();
       if (pos) this.actualizarCoordenadas(pos.lat, pos.lng, false);
     });
-
     this.map.on('click', (e: LeafletMouseEvent) => {
       this.actualizarCoordenadas(e.latlng.lat, e.latlng.lng, true);
     });
-
-    // En layouts con sidebar/panel, Leaflet puede renderizarse "cortado"
-    // hasta que se invalida tamaño después del primer paint.
     this.map.whenReady(() => {
       setTimeout(() => this.map?.invalidateSize(), 0);
       setTimeout(() => this.map?.invalidateSize(), 250);
       setTimeout(() => this.map?.invalidateSize(), 800);
     });
-
     window.addEventListener('resize', this.onResize);
   }
 
@@ -204,25 +251,21 @@ export class RegistrarTallerPageComponent implements OnInit, AfterViewInit, OnDe
       this.error = 'Ingresa una dirección para buscar en el mapa';
       return;
     }
-
     this.buscandoDireccion = true;
     this.error = '';
     const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(direccion)}`;
-    const req = this.http.get<Array<{ lat: string; lon: string }>>(url);
-    const sub = req.subscribe({
+    const sub = this.http.get<Array<{ lat: string; lon: string }>>(url).subscribe({
       next: (rows) => {
         this.buscandoDireccion = false;
         if (!rows.length) {
-          this.error = 'No se encontró esa dirección. Intenta con más detalle.';
+          this.error = 'No se encontró esa dirección.';
           return;
         }
-        const lat = Number(rows[0].lat);
-        const lng = Number(rows[0].lon);
-        this.actualizarCoordenadas(lat, lng, true);
+        this.actualizarCoordenadas(Number(rows[0].lat), Number(rows[0].lon), true);
       },
       error: () => {
         this.buscandoDireccion = false;
-        this.error = 'No se pudo buscar la dirección en el mapa';
+        this.error = 'No se pudo buscar la dirección';
       },
     });
     this.subs.add(sub);
@@ -230,14 +273,8 @@ export class RegistrarTallerPageComponent implements OnInit, AfterViewInit, OnDe
 
   private actualizarCoordenadas(lat: number, lng: number, centrar: boolean): void {
     this.form.patchValue({ latitud: lat, longitud: lng });
-    this.coordenadasSeleccionadas = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     if (this.pointMarker) {
       this.pointMarker.setLatLng(latLng(lat, lng));
-      this.pointMarker.bindTooltip('Ubicación seleccionada', {
-        direction: 'top',
-        offset: [0, -10],
-        permanent: true,
-      }).openTooltip();
     }
     if (centrar && this.map) {
       this.map.setView([lat, lng], 15);
@@ -245,49 +282,50 @@ export class RegistrarTallerPageComponent implements OnInit, AfterViewInit, OnDe
     }
   }
 
-  private readonly onResize = () => {
-    this.map?.invalidateSize();
-  };
+  private readonly onResize = () => this.map?.invalidateSize();
+
+  toggleServicio(servicio: string, checked: boolean): void {
+    if (checked) {
+      this.serviciosSeleccionados.add(servicio);
+      return;
+    }
+    this.serviciosSeleccionados.delete(servicio);
+  }
+
+  private obtenerServiciosFinales(): string[] {
+    const otros = this.form.controls.servicios_otro.value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return [...Array.from(this.serviciosSeleccionados), ...otros];
+  }
 
   submit(): void {
     if (this.form.invalid) return;
     this.loading = true;
     this.ok = '';
     this.error = '';
-
     const v = this.form.getRawValue();
-    const payload = {
-      usuario_id: v.usuario_id,
-      nombre: v.nombre,
-      direccion: v.direccion || undefined,
+    this.tallerService.registrarSolicitudAfiliacion({
+      nombre_taller: v.nombre_taller,
+      responsable_nombre: v.responsable_nombre,
+      responsable_email: v.responsable_email,
+      responsable_telefono: v.responsable_telefono,
+      direccion: v.direccion,
       latitud: Number(v.latitud),
       longitud: Number(v.longitud),
-      servicios: v.servicios.split(',').map((s) => s.trim()).filter(Boolean),
-      disponible: v.disponible,
-    };
-
-    this.tallerService.registrarTaller(payload).subscribe({
-      next: (res) => {
+      servicios: this.obtenerServiciosFinales(),
+      descripcion: v.descripcion || undefined,
+    }).subscribe({
+      next: () => {
         this.loading = false;
-        this.ok = `Taller registrado: ${res.nombre}`;
+        this.ok = 'Solicitud enviada correctamente. Te contactaremos tras la revisión.';
+        this.form.patchValue({ servicios_otro: '', descripcion: '' });
       },
       error: (err) => {
         this.loading = false;
-        this.error = this.getBackendError(err, 'No se pudo registrar taller');
+        this.error = err?.error?.detail ?? 'No se pudo enviar la solicitud';
       },
     });
-  }
-
-  private getBackendError(err: any, fallback: string): string {
-    const detail = err?.error?.detail;
-    if (typeof detail === 'string' && detail.trim()) return detail;
-    if (Array.isArray(detail) && detail.length > 0) {
-      const first = detail[0];
-      if (typeof first?.msg === 'string') return first.msg;
-    }
-    if (typeof err?.error === 'string' && err.error.trim()) return err.error;
-    if (typeof err?.message === 'string' && err.message.trim()) return err.message;
-    if (typeof err?.status === 'number') return `${fallback} (HTTP ${err.status})`;
-    return fallback;
   }
 }

@@ -1,6 +1,7 @@
 import { CommonModule, Location } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 
@@ -16,12 +17,13 @@ import { AuthService } from '../../services/auth.service';
       </div>
 
       <h2>Recuperar Contraseña</h2>
-      <p class="muted">Solicita un token de recuperación y luego restablece tu contraseña.</p>
-      <p class="info-banner">
-        Por el momento, la recuperación de contraseña se está realizando mediante token manual.
+      <p class="muted" *ngIf="!activationMode">Solicita un token de recuperación y luego restablece tu contraseña.</p>
+      <p class="muted" *ngIf="activationMode">Tu taller fue aprobado. Crea tu contraseña para activar acceso al panel.</p>
+      <p class="info-banner" *ngIf="!activationMode">
+        Se enviará un enlace seguro al correo si la cuenta existe.
       </p>
 
-      <form [formGroup]="requestForm" (ngSubmit)="requestToken()" class="form-block">
+      <form [formGroup]="requestForm" (ngSubmit)="requestToken()" class="form-block" *ngIf="!activationMode && !tokenPresenteEnUrl">
         <label>Email</label>
         <input type="email" formControlName="email" />
         <button type="submit" [disabled]="loadingRequest || requestForm.invalid">
@@ -31,12 +33,8 @@ import { AuthService } from '../../services/auth.service';
 
       <p *ngIf="requestMessage" class="ok">{{ requestMessage }}</p>
       <p *ngIf="requestError" class="error">{{ requestError }}</p>
-      <p *ngIf="tokenSugerido" class="token">Token recibido: {{ tokenSugerido }}</p>
 
-      <form [formGroup]="resetForm" (ngSubmit)="resetPassword()" class="form-block">
-        <label>Token de recuperación</label>
-        <input type="text" formControlName="reset_token" />
-
+      <form [formGroup]="resetForm" (ngSubmit)="resetPassword()" class="form-block" *ngIf="tokenValido">
         <label>Nueva contraseña</label>
         <div class="password-field">
           <input [type]="showNewPassword ? 'text' : 'password'" formControlName="nueva_password" />
@@ -45,6 +43,9 @@ import { AuthService } from '../../services/auth.service';
           </button>
         </div>
 
+        <label>Confirmar nueva contraseña</label>
+        <input [type]="showNewPassword ? 'text' : 'password'" formControlName="nueva_password_confirmacion" />
+
         <button type="submit" [disabled]="loadingReset || resetForm.invalid">
           {{ loadingReset ? 'Restableciendo...' : 'Restablecer contraseña' }}
         </button>
@@ -52,6 +53,12 @@ import { AuthService } from '../../services/auth.service';
 
       <p *ngIf="resetMessage" class="ok">{{ resetMessage }}</p>
       <p *ngIf="resetError" class="error">{{ resetError }}</p>
+      <p *ngIf="!tokenValido && tokenEvaluado && !activationMode" class="muted">
+        Para cambiar contraseña, abre el enlace que recibiste en tu correo.
+      </p>
+      <p *ngIf="activationMode && !tokenValido && !resetError" class="error">
+        El enlace de activación no es válido o ya expiró.
+      </p>
     </section>
   `,
   styles: [`
@@ -139,26 +146,43 @@ import { AuthService } from '../../services/auth.service';
       margin: 0 0 12px;
       line-height:1.35;
     }
-    .token {
-      background:#f7f9ff;
-      border:1px dashed #98a2b3;
-      border-radius:8px;
-      padding:10px;
-      word-break:break-all;
+    @media (max-width: 640px) {
+      .card {
+        padding: 14px;
+        border-radius: 12px;
+      }
+      .header-row {
+        align-items: flex-start;
+      }
+      .password-field {
+        flex-direction: column;
+      }
+      .pass-toggle {
+        width: 100%;
+      }
+      .badge {
+        font-size: 11px;
+      }
+      h2 {
+        font-size: 28px;
+      }
     }
   `],
 })
-export class RecoverPasswordPageComponent {
+export class RecoverPasswordPageComponent implements OnInit {
   loadingRequest = false;
   loadingReset = false;
 
   requestMessage = '';
   requestError = '';
-  tokenSugerido = '';
 
   resetMessage = '';
   resetError = '';
   showNewPassword = false;
+  activationMode = false;
+  tokenValido = false;
+  tokenEvaluado = false;
+  tokenPresenteEnUrl = false;
 
   readonly requestForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -167,13 +191,43 @@ export class RecoverPasswordPageComponent {
   readonly resetForm = this.fb.nonNullable.group({
     reset_token: ['', [Validators.required]],
     nueva_password: ['', [Validators.required, Validators.minLength(6)]],
+    nueva_password_confirmacion: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly location: Location,
+    private readonly route: ActivatedRoute,
   ) {}
+
+  ngOnInit(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const token = qp.get('reset_token');
+    const mode = qp.get('mode');
+    if (mode === 'activation') {
+      this.activationMode = true;
+    }
+    if (token) {
+      this.tokenPresenteEnUrl = true;
+      this.resetForm.patchValue({ reset_token: token });
+      this.validarToken(token);
+    }
+  }
+
+  private validarToken(token: string): void {
+    this.authService.validateResetToken({ reset_token: token }).subscribe({
+      next: () => {
+        this.tokenValido = true;
+        this.tokenEvaluado = true;
+      },
+      error: () => {
+        this.tokenValido = false;
+        this.tokenEvaluado = true;
+        this.resetError = 'El enlace no es válido o ya expiró';
+      },
+    });
+  }
 
   goBack(): void {
     this.location.back();
@@ -184,13 +238,11 @@ export class RecoverPasswordPageComponent {
     this.loadingRequest = true;
     this.requestMessage = '';
     this.requestError = '';
-    this.tokenSugerido = '';
 
     this.authService.requestPasswordRecovery(this.requestForm.getRawValue()).subscribe({
       next: (res) => {
         this.loadingRequest = false;
         this.requestMessage = res.mensaje;
-        this.tokenSugerido = res.reset_token ?? '';
       },
       error: (err) => {
         this.loadingRequest = false;
@@ -201,15 +253,26 @@ export class RecoverPasswordPageComponent {
 
   resetPassword(): void {
     if (this.resetForm.invalid) return;
+    const raw = this.resetForm.getRawValue();
+    const pass = raw.nueva_password.trim();
+    const confirm = raw.nueva_password_confirmacion.trim();
+    if (pass !== confirm) {
+      this.resetError = 'La confirmación de contraseña no coincide';
+      return;
+    }
     this.loadingReset = true;
     this.resetMessage = '';
     this.resetError = '';
 
-    this.authService.resetPassword(this.resetForm.getRawValue()).subscribe({
+    this.authService.resetPassword({
+      reset_token: raw.reset_token,
+      nueva_password: pass,
+    }).subscribe({
       next: (res) => {
         this.loadingReset = false;
         this.resetMessage = res.mensaje;
         this.resetForm.reset();
+        this.tokenValido = false;
       },
       error: (err) => {
         this.loadingReset = false;
