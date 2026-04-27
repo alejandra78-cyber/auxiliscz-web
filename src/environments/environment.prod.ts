@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://abundant-motivation-production.up.railway.app/api'
+  apiUrl: 'https://auxiliscz-backend-production.up.railway.app/api'
 };
