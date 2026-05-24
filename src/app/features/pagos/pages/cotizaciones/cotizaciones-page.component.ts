@@ -15,7 +15,7 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <section class="card" *ngIf="mode === 'generar'">
-      <h2>CU20 · Generar cotización</h2>
+      <h2>Generar cotización</h2>
       <p class="muted">Selecciona una solicitud ya diagnosticada para emitir cotización.</p>
 
       <form [formGroup]="form" (ngSubmit)="generar()" class="grid">
@@ -52,7 +52,7 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
     </section>
 
     <section class="card" *ngIf="mode === 'gestionar'">
-      <h2>CU21 · Gestionar cotización</h2>
+      <h2>Gestionar cotización</h2>
       <p class="muted">Visualiza cotizaciones emitidas con datos de cliente y estado de respuesta.</p>
 
       <div class="toolbar">

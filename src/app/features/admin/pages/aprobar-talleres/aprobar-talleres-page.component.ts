@@ -11,7 +11,7 @@ import { SolicitudAfiliacion, TallerService } from '../../../taller/services/tal
   template: `
     <section class="page">
       <header class="hero">
-        <p class="eyebrow">CU27 · Administración</p>
+        <p class="eyebrow">Administración</p>
         <h2>Aprobar Solicitudes de Taller</h2>
         <p class="sub">Revisa solicitudes públicas de afiliación y decide su aprobación o rechazo.</p>
       </header>

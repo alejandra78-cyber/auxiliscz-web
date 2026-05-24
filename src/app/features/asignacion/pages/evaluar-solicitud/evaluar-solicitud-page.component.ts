@@ -35,7 +35,7 @@ import { environment } from '../../../../../environments/environment';
         </div>
 
         <details class="tech-box">
-          <summary>Detalles técnicos de asignación (CU16)</summary>
+          <summary>Detalles técnicos de asignación</summary>
           <div class="tech-grid">
             <p><strong>Puntaje:</strong> {{ detalle.puntaje_asignacion ?? '-' }}</p>
             <p><strong>Origen:</strong> {{ detalle.origen_asignacion || '-' }}</p>
@@ -80,7 +80,7 @@ import { environment } from '../../../../../environments/environment';
           <button type="button" (click)="aceptar()" [disabled]="loading">{{ loading ? 'Procesando...' : 'Aceptar' }}</button>
           <button type="button" class="warn" (click)="rechazar()" [disabled]="loading">{{ loading ? 'Procesando...' : 'Rechazar' }}</button>
         </div>
-        <p *ngIf="!puedeEvaluar(detalle)" class="muted">Esta solicitud ya fue evaluada y no admite cambios en CU15.</p>
+        <p *ngIf="!puedeEvaluar(detalle)" class="muted">Esta solicitud ya fue evaluada y no admite cambios.</p>
       </section>
 
       <p *ngIf="ok" class="ok">{{ ok }}</p>

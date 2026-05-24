@@ -14,7 +14,7 @@ import {
   template: `
     <section class="card">
       <h2>Seguimiento de ubicación del técnico</h2>
-      <p class="muted">Comparte tu ubicación GPS para que el cliente pueda ver tu ruta en CU19.</p>
+      <p class="muted">Comparte tu ubicación GPS para que el cliente pueda ver tu ruta en tiempo real.</p>
 
       <div class="grid">
         <label>Servicio asignado</label>

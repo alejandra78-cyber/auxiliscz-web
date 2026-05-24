@@ -13,7 +13,7 @@ import { AuthService } from '../../../auth/services/auth.service';
   template: `
     <section class="card">
       <header class="hero">
-        <p class="eyebrow">CU07 · Taller</p>
+        <p class="eyebrow">Taller</p>
         <h2>Ubicación del Taller</h2>
         <p class="sub">Actualiza la ubicación operativa para asignación inteligente y cobertura.</p>
       </header>

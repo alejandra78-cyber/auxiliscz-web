@@ -19,18 +19,18 @@ import { ServicioActivo, TallerService } from '../../services/taller.service';
         <select formControlName="incidenteId">
           <option value="" disabled>Selecciona una solicitud</option>
           <option *ngFor="let s of servicios" [value]="s.incidente_id">
-            {{ s.codigo_solicitud }} · {{ s.cliente || 'Cliente' }} · {{ s.tipo_servicio || 'servicio general' }} · {{ s.estado }}
+            {{ s.codigo_solicitud }} · {{ s.cliente || 'Cliente' }} · {{ s.tipo_servicio || 'servicio general' }} · {{ labelEstado(s.estado) }}
           </option>
         </select>
 
-        <label>Costo final</label>
-        <input type="number" formControlName="costo" />
+        <label>Descripción del trabajo</label>
+        <textarea rows="2" formControlName="descripcionTrabajo" placeholder="Qué se realizó en el servicio"></textarea>
 
         <label>Observación final</label>
         <textarea rows="2" formControlName="observacion"></textarea>
 
-        <label>Evidencia (texto opcional)</label>
-        <textarea rows="2" formControlName="evidenciaTexto"></textarea>
+        <label>Evidencia (URL opcional)</label>
+        <textarea rows="2" formControlName="evidenciaUrl" placeholder="https://... (opcional)"></textarea>
 
         <button type="submit" [disabled]="loading || form.invalid || !servicios.length">
           {{ loading ? 'Guardando...' : 'Marcar como completado' }}
@@ -65,9 +65,9 @@ export class TrabajoCompletadoPageComponent implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     incidenteId: ['', [Validators.required]],
-    costo: [0, [Validators.required, Validators.min(1)]],
+    descripcionTrabajo: ['', [Validators.required, Validators.minLength(3)]],
     observacion: [''],
-    evidenciaTexto: [''],
+    evidenciaUrl: [''],
   });
 
   constructor(
@@ -77,6 +77,28 @@ export class TrabajoCompletadoPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarServiciosActivos();
+  }
+
+  labelEstado(estado: string | null | undefined): string {
+    const key = (estado || '').trim().toLowerCase();
+    const map: Record<string, string> = {
+      pendiente_respuesta: 'Pendiente de respuesta',
+      aceptada: 'Solicitud aceptada',
+      tecnico_asignado: 'Técnico asignado',
+      en_camino: 'Técnico en camino',
+      en_diagnostico: 'Técnico en el lugar',
+      diagnostico_completado: 'Diagnóstico completado',
+      cotizacion_emitida: 'Cotización emitida',
+      cotizacion_aceptada: 'Cotización aceptada',
+      en_proceso: 'En atención',
+      atendido: 'Servicio atendido',
+      trabajo_completado: 'Trabajo completado',
+      esperando_pago: 'Pago pendiente',
+      pagado: 'Pagado',
+      finalizado: 'Servicio finalizado',
+      cancelado: 'Cancelado',
+    };
+    return map[key] || (estado || '-');
   }
 
   cargarServiciosActivos(): void {
@@ -103,12 +125,12 @@ export class TrabajoCompletadoPageComponent implements OnInit {
     this.ok = '';
     this.error = '';
 
-    const { incidenteId, costo, observacion, evidenciaTexto } = this.form.getRawValue();
+    const { incidenteId, descripcionTrabajo, observacion, evidenciaUrl } = this.form.getRawValue();
     this.tallerService.registrarTrabajoCompletado(
       incidenteId,
-      Number(costo),
+      descripcionTrabajo.trim(),
       observacion || undefined,
-      evidenciaTexto || undefined,
+      evidenciaUrl || undefined,
     ).subscribe({
       next: () => {
         this.loading = false;

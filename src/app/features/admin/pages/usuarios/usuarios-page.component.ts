@@ -9,7 +9,7 @@ import { AdminService, UsuarioAdminItem } from '../../services/admin.service';
   imports: [CommonModule],
   template: `
     <section class="card">
-      <h2>CU26 · Gestionar usuarios</h2>
+      <h2>Gestionar usuarios</h2>
       <div class="toolbar">
         <select [value]="rolFiltro" (change)="onRol($event)">
           <option value="">Todos los roles</option>

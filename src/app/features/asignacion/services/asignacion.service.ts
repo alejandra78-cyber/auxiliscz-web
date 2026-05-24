@@ -171,6 +171,32 @@ export class AsignacionService {
     });
   }
 
+  ejecutarAccionOperativa(
+    incidenteId: string,
+    accion:
+      | 'aceptar_solicitud'
+      | 'rechazar_solicitud'
+      | 'asignar_tecnico'
+      | 'iniciar_ruta'
+      | 'llegue_al_lugar'
+      | 'completar_diagnostico'
+      | 'iniciar_atencion'
+      | 'generar_cotizacion'
+      | 'finalizar_servicio',
+    payload?: {
+      observacion?: string;
+      tecnicoId?: string;
+      servicio?: string;
+    },
+  ): Observable<SolicitudServicio> {
+    return this.http.patch<SolicitudServicio>(`${this.apiBase}/asignacion/solicitudes/${incidenteId}/estado`, {
+      accion,
+      observacion: payload?.observacion,
+      tecnico_id: payload?.tecnicoId,
+      servicio: payload?.servicio,
+    });
+  }
+
   listarTecnicosDisponibles(solicitudId?: string): Observable<TecnicoDisponible[]> {
     const qs = solicitudId ? `?solicitud_id=${encodeURIComponent(solicitudId)}` : '';
     return this.http.get<TecnicoDisponible[]>(`${this.apiBase}/asignacion/tecnicos/disponibles${qs}`);

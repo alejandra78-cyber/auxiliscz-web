@@ -17,7 +17,7 @@ import {
       <header class="hero">
         <p class="eyebrow">Taller</p>
         <h2>Consultar solicitudes de servicio</h2>
-        <p class="sub">Visualiza solo solicitudes de tu taller con prioridad, ubicación, evidencias y contexto para CU15/CU16/CU17.</p>
+        <p class="sub">Visualiza solicitudes de tu taller con prioridad, ubicación, evidencias y contexto operativo.</p>
       </header>
 
       <section class="filters">

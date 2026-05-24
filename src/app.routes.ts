@@ -109,7 +109,7 @@ export const appRoutes: Routes = [
         path: 'registro-emergencias/reportar-emergencia',
         component: PackagePlaceholderPageComponent,
         canActivate: [roleGuard(['cliente', 'conductor', 'admin'])],
-        data: { title: 'CU11 · Reportar emergencia', description: 'Paquete: Registro de Emergencias' },
+        data: { title: 'Reportar emergencia', description: 'Módulo de emergencias' },
       },
       {
         path: 'registro-emergencias/cancelar-solicitud',
@@ -142,7 +142,7 @@ export const appRoutes: Routes = [
       {
         path: 'atencion-solicitudes/actualizar-estado',
         component: ActualizarEstadoPageComponent,
-        canActivate: [roleGuard(['taller', 'admin'])],
+        canActivate: [roleGuard(['taller', 'tecnico', 'admin'])],
       },
 
       // Pagos
@@ -150,19 +150,19 @@ export const appRoutes: Routes = [
         path: 'pagos/generar-cotizacion',
         component: CotizacionesPageComponent,
         canActivate: [roleGuard(['taller', 'admin'])],
-        data: { title: 'CU20 · Generar cotización', description: 'Paquete: Pagos' },
+        data: { title: 'Generar cotización', description: 'Módulo de pagos' },
       },
       {
         path: 'pagos/gestionar-cotizacion',
         component: CotizacionesPageComponent,
         canActivate: [roleGuard(['taller', 'admin', 'cliente', 'conductor'])],
-        data: { title: 'CU21 · Gestionar cotización', description: 'Paquete: Pagos' },
+        data: { title: 'Gestionar cotización', description: 'Módulo de pagos' },
       },
       {
         path: 'pagos/procesar-pago',
         component: PackagePlaceholderPageComponent,
         canActivate: [roleGuard(['cliente', 'conductor', 'admin'])],
-        data: { title: 'CU22 · Procesar pago', description: 'Paquete: Pagos' },
+        data: { title: 'Procesar pago', description: 'Módulo de pagos' },
       },
 
       // Administración y Reportes

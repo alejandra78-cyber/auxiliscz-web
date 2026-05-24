@@ -345,14 +345,14 @@ export class TallerService {
 
   registrarTrabajoCompletado(
     incidenteId: string,
-    costo: number,
+    descripcionTrabajo: string,
     observacion?: string,
-    evidenciaTexto?: string,
+    evidenciaUrl?: string,
   ): Observable<any> {
     return this.http.patch(`${this.apiBase}/taller/mi-taller/servicios/${incidenteId}/completar`, {
-      costo,
+      descripcion_trabajo: descripcionTrabajo,
       observacion,
-      evidencia_texto: evidenciaTexto,
+      evidencia_url: evidenciaUrl,
     });
   }
 

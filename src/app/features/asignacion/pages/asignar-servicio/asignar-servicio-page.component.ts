@@ -15,8 +15,8 @@ import {
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <section class="card">
-      <h2>CU16 · Asignar servicio (técnico)</h2>
-      <p class="muted">Después de CU15 (aceptada), selecciona un técnico disponible de tu taller y confirma la asignación real.</p>
+      <h2>Asignar técnico al servicio</h2>
+      <p class="muted">Selecciona un técnico disponible de tu taller y confirma la asignación.</p>
 
       <form [formGroup]="form" (ngSubmit)="guardar()" class="grid">
         <label>Solicitud aceptada</label>
