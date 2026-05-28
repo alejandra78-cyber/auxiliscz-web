@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { SolicitudAfiliacion, TallerService } from '../../../taller/services/taller.service';
 
@@ -11,9 +12,12 @@ import { SolicitudAfiliacion, TallerService } from '../../../taller/services/tal
   template: `
     <section class="page">
       <header class="hero">
-        <p class="eyebrow">Administración</p>
-        <h2>Aprobar Solicitudes de Taller</h2>
-        <p class="sub">Revisa solicitudes públicas de afiliación y decide su aprobación o rechazo.</p>
+        <div>
+          <p class="eyebrow">Administración</p>
+          <h2>Aprobar Solicitudes de Taller</h2>
+          <p class="sub">Revisa solicitudes públicas de afiliación y decide su aprobación o rechazo.</p>
+        </div>
+        <button type="button" class="secondary" (click)="volverTenants()">Volver a gestionar tenants</button>
       </header>
 
       <div class="toolbar">
@@ -100,7 +104,7 @@ import { SolicitudAfiliacion, TallerService } from '../../../taller/services/tal
   styles: [`
     :host { display:block; }
     .page { display:grid; gap: 14px; }
-    .hero { background: linear-gradient(135deg, #ecf7f3, #eff6ff); border: 1px solid #dce9fe; border-radius: 14px; padding: 16px; }
+    .hero { background: linear-gradient(135deg, #ecf7f3, #eff6ff); border: 1px solid #dce9fe; border-radius: 14px; padding: 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
     .eyebrow { margin: 0 0 4px; font-size: 12px; font-weight: 700; color: #165a90; text-transform: uppercase; letter-spacing: 0.5px; }
     .hero h2 { margin: 0; font-size: 28px; color: #1f2b45; }
     .sub { margin: 6px 0 0; color: #52627f; }
@@ -126,6 +130,8 @@ import { SolicitudAfiliacion, TallerService } from '../../../taller/services/tal
     .error { margin: 0; color: #b42318; font-weight: 600; }
     @media (max-width: 900px) {
       .hero h2 { font-size: 23px; }
+      .hero { flex-direction: column; }
+      .hero button { width: 100%; }
       .toolbar { flex-direction: column; align-items: stretch; }
       .toolbar button { width: 100%; }
       .desktop-table { display: none; }
@@ -140,7 +146,7 @@ export class AprobarTalleresPageComponent implements OnInit {
   actionLoadingId = '';
   error = '';
 
-  constructor(private readonly tallerService: TallerService) {}
+  constructor(private readonly tallerService: TallerService, private readonly router: Router) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -188,5 +194,9 @@ export class AprobarTalleresPageComponent implements OnInit {
         this.error = err?.error?.detail ?? 'No se pudo rechazar la solicitud';
       },
     });
+  }
+
+  volverTenants(): void {
+    this.router.navigate(['/admin-reportes/tenants']);
   }
 }

@@ -24,6 +24,7 @@ import { AprobarTalleresPageComponent } from './app/features/admin/pages/aprobar
 import { RegistrarTallerPageComponent } from './app/features/taller/pages/registrar-taller/registrar-taller-page.component';
 import { UsuariosPageComponent } from './app/features/admin/pages/usuarios/usuarios-page.component';
 import { ReportesPageComponent } from './app/features/admin/pages/reportes/reportes-page.component';
+import { TenantsPageComponent } from './app/features/admin/pages/tenants/tenants-page.component';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -174,6 +175,11 @@ export const appRoutes: Routes = [
       {
         path: 'admin-reportes/gestionar-usuarios',
         component: UsuariosPageComponent,
+        canActivate: [roleGuard(['admin'])],
+      },
+      {
+        path: 'admin-reportes/tenants',
+        component: TenantsPageComponent,
         canActivate: [roleGuard(['admin'])],
       },
       {

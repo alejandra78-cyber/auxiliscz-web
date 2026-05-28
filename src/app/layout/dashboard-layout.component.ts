@@ -481,6 +481,7 @@ export class DashboardLayoutComponent {
       title: 'Reportes y Administración',
       items: [
         { label: 'Gestionar usuarios', actor: 'Admin', path: '/admin-reportes/gestionar-usuarios', roles: ['admin'] },
+        { label: 'Gestionar tenants', actor: 'Admin', path: '/admin-reportes/tenants', roles: ['admin'] },
         { label: 'Aprobar talleres', actor: 'Admin', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
         { label: 'Reportes y métricas', actor: 'Admin', path: '/admin-reportes/reportes-metricas', roles: ['admin'] },
       ],

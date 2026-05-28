@@ -32,6 +32,34 @@ export interface UsuarioAdminItem {
   rol: string;
 }
 
+export interface TenantItem {
+  id: string;
+  taller_id?: string | null;
+  taller_nombre?: string | null;
+  taller_estado?: string | null;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  estado: string;
+  contacto_email?: string | null;
+  contacto_telefono?: string | null;
+  usuarios: number;
+  talleres: number;
+  tecnicos?: number;
+  incidentes: number;
+  incidentes_atendidos?: number;
+  servicios_completados?: number;
+  administrador_principal?: string | null;
+  creado_en?: string | null;
+  ultima_actividad?: string | null;
+}
+
+export interface TenantOption {
+  id: string;
+  label: string;
+  tenant_id?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly apiBase = environment.apiUrl.endsWith('/api')
@@ -62,6 +90,34 @@ export class AdminService {
 
   cambiarRolUsuario(usuarioId: string, rol: string): Observable<UsuarioAdminItem> {
     return this.http.patch<UsuarioAdminItem>(`${this.apiBase}/admin/usuarios/${usuarioId}/rol`, { rol });
+  }
+
+  listarTenants(): Observable<TenantItem[]> {
+    return this.http.get<TenantItem[]>(`${this.apiBase}/tenants`);
+  }
+
+  crearTenant(payload: Partial<TenantItem>): Observable<TenantItem> {
+    return this.http.post<TenantItem>(`${this.apiBase}/tenants`, payload);
+  }
+
+  actualizarTenant(tenantId: string, payload: Partial<TenantItem>): Observable<TenantItem> {
+    return this.http.patch<TenantItem>(`${this.apiBase}/tenants/${tenantId}`, payload);
+  }
+
+  listarUsuariosTenant(): Observable<TenantOption[]> {
+    return this.http.get<TenantOption[]>(`${this.apiBase}/tenants/usuarios-opciones`);
+  }
+
+  listarTalleresTenant(): Observable<TenantOption[]> {
+    return this.http.get<TenantOption[]>(`${this.apiBase}/tenants/talleres-opciones`);
+  }
+
+  asignarUsuarioTenant(tenantId: string, usuarioId: string): Observable<TenantItem> {
+    return this.http.post<TenantItem>(`${this.apiBase}/tenants/${tenantId}/usuarios`, { usuario_id: usuarioId });
+  }
+
+  asignarTallerTenant(tenantId: string, tallerId: string): Observable<TenantItem> {
+    return this.http.post<TenantItem>(`${this.apiBase}/tenants/${tenantId}/talleres`, { taller_id: tallerId });
   }
 }
 
