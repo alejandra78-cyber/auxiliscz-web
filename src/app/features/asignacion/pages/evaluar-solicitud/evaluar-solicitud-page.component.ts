@@ -5,6 +5,7 @@ import { divIcon, latLng, Map, marker, Marker, tileLayer } from 'leaflet';
 
 import { AsignacionService, SolicitudServicio, SolicitudServicioDetalle } from '../../services/asignacion.service';
 import { environment } from '../../../../../environments/environment';
+import { OfflineSyncService } from '../../../emergencia/services/offline-sync.service';
 
 @Component({
   selector: 'app-evaluar-solicitud-page',
@@ -142,9 +143,11 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
   constructor(
     private readonly fb: FormBuilder,
     private readonly asignacionService: AsignacionService,
+    private readonly offlineSync: OfflineSyncService,
   ) {}
 
   ngOnInit(): void {
+    this.offlineSync.startAutoSync();
     this.cargarSolicitudes();
     this.form.controls.solicitudId.valueChanges.subscribe((id) => {
       if (!id) {
@@ -205,6 +208,12 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
     this.ok = '';
     this.error = '';
     const reqId = this.detalle.incidente_id || this.detalle.id;
+    if (!navigator.onLine) {
+      this.offlineSync.queueOperation('aceptar_solicitud', { incidente_id: reqId });
+      this.loading = false;
+      this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
+      return;
+    }
     this.asignacionService.aceptarSolicitud(reqId).subscribe({
       next: (res) => {
         this.loading = false;
@@ -226,6 +235,15 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
     this.error = '';
     const reqId = this.detalle.incidente_id || this.detalle.id;
     const motivo = this.form.getRawValue().observacion?.trim() || undefined;
+    if (!navigator.onLine) {
+      this.offlineSync.queueOperation('rechazar_solicitud', {
+        incidente_id: reqId,
+        motivo_rechazo: motivo,
+      });
+      this.loading = false;
+      this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
+      return;
+    }
     this.asignacionService.rechazarSolicitud(reqId, motivo).subscribe({
       next: (res) => {
         this.loading = false;

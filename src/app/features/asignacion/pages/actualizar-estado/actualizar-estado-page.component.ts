@@ -9,6 +9,7 @@ import {
   SolicitudServicio,
   TecnicoDisponible,
 } from '../../services/asignacion.service';
+import { OfflineSyncService } from '../../../emergencia/services/offline-sync.service';
 
 type OperativeAction =
   | 'aceptar_solicitud'
@@ -141,9 +142,11 @@ export class ActualizarEstadoPageComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly authService: AuthService,
+    private readonly offlineSync: OfflineSyncService,
   ) {}
 
   ngOnInit(): void {
+    this.offlineSync.startAutoSync();
     this.isReadonly = this.route.snapshot.queryParamMap.get('modo') === 'supervision';
     this.currentRole = this.normalizeRole(this.authService.getCurrentRole());
     this.cargarSolicitudes();
@@ -276,6 +279,18 @@ export class ActualizarEstadoPageComponent implements OnInit {
     this.ok = '';
     this.error = '';
     const raw = this.form.getRawValue();
+    if (!navigator.onLine) {
+      this.offlineSync.queueOperation('accion_servicio', {
+        incidente_id: this.seleccionada.id,
+        accion,
+        observacion: raw.observacion || undefined,
+        tecnico_id: raw.tecnicoId || undefined,
+        servicio: raw.servicio || undefined,
+      });
+      this.loading = false;
+      this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
+      return;
+    }
     this.asignacionService
       .ejecutarAccionOperativa(this.seleccionada.id, accion, {
         observacion: raw.observacion || undefined,

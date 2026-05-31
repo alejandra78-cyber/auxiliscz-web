@@ -7,6 +7,7 @@ import {
   AsignacionService,
   SolicitudServicio,
 } from '../../../asignacion/services/asignacion.service';
+import { OfflineSyncService } from '../../../emergencia/services/offline-sync.service';
 import { CotizacionOut, PagosService } from '../../services/pagos.service';
 
 @Component({
@@ -30,6 +31,9 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
         <label>Monto total</label>
         <input type="number" formControlName="monto_total" min="1" step="0.01" />
 
+        <label>Tiempo estimado</label>
+        <input formControlName="tiempo_estimado" placeholder="Ej: 2 horas, 1 día" />
+
         <label>Detalle</label>
         <textarea rows="3" formControlName="detalle" placeholder="Diagnóstico y trabajos propuestos"></textarea>
 
@@ -46,8 +50,10 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
         <p><strong>Solicitud:</strong> {{ resultado.codigo_solicitud || '-' }}</p>
         <p><strong>Cliente:</strong> {{ resultado.cliente_nombre || '-' }}</p>
         <p><strong>Monto:</strong> {{ resultado.monto_total }}</p>
+        <p><strong>Tiempo estimado:</strong> {{ resultado.tiempo_estimado || '-' }}</p>
         <p><strong>Estado:</strong> {{ resultado.estado }}</p>
       </div>
+      <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
     </section>
 
@@ -58,10 +64,10 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
       <div class="toolbar">
         <select [value]="estadoFiltro" (change)="onCambiarFiltro($event)">
           <option value="">Todos los estados</option>
-          <option value="emitida">Emitida</option>
+          <option value="enviada">Enviada</option>
           <option value="aceptada">Aceptada</option>
           <option value="rechazada">Rechazada</option>
-          <option value="pendiente">Pendiente</option>
+          <option value="vencida">Vencida</option>
         </select>
         <button type="button" (click)="cargarCotizaciones()" [disabled]="loadingCotizaciones">
           {{ loadingCotizaciones ? 'Cargando...' : 'Recargar' }}
@@ -82,6 +88,7 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
           <p><strong>Vehículo:</strong> {{ c.vehiculo_placa || '-' }}</p>
           <p><strong>Tipo:</strong> {{ c.tipo_problema || '-' }}</p>
           <p><strong>Monto:</strong> {{ c.monto_total }}</p>
+          <p><strong>Tiempo estimado:</strong> {{ c.tiempo_estimado || '-' }}</p>
           <p><strong>Emitida:</strong> {{ c.fecha_emision || '-' }}</p>
           <p><strong>Respuesta cliente:</strong> {{ c.fecha_respuesta_cliente || '-' }}</p>
           <p><strong>Detalle:</strong> {{ c.detalle || '-' }}</p>
@@ -103,12 +110,14 @@ import { CotizacionOut, PagosService } from '../../services/pagos.service';
     .item { border:1px solid #d8e4ff; border-radius:10px; padding:10px; background:#f8fbff; }
     header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
     .chip { background:#eaf2ff; color:#1f3a7a; border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; }
+    .ok { color:#027a48; }
     .error { color:#b42318; }
   `],
 })
 export class CotizacionesPageComponent implements OnInit {
   mode: 'generar' | 'gestionar' = 'generar';
   error = '';
+  ok = '';
   loading = false;
   loadingCotizaciones = false;
   resultado: CotizacionOut | null = null;
@@ -119,6 +128,7 @@ export class CotizacionesPageComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     incidente_id: ['', [Validators.required]],
     monto_total: [0, [Validators.required, Validators.min(1)]],
+    tiempo_estimado: [''],
     detalle: ['', [Validators.required, Validators.minLength(3)]],
     observaciones: [''],
   });
@@ -128,9 +138,11 @@ export class CotizacionesPageComponent implements OnInit {
     private readonly asignacionService: AsignacionService,
     private readonly route: ActivatedRoute,
     private readonly fb: FormBuilder,
+    private readonly offlineSync: OfflineSyncService,
   ) {}
 
   ngOnInit(): void {
+    this.offlineSync.startAutoSync();
     this.mode = this.route.snapshot.routeConfig?.path?.includes('gestionar-cotizacion')
       ? 'gestionar'
       : 'generar';
@@ -157,7 +169,7 @@ export class CotizacionesPageComponent implements OnInit {
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
         this.solicitudesDiagnostico = (rows || []).filter((s) =>
-          ['en_diagnostico', 'diagnostico_completado'].includes(
+          ['aceptada_para_cotizar', 'cotizacion_enviada'].includes(
             this.normalizarEstadoAsignacion(s.estado_asignacion || s.estado),
           ),
         );
@@ -193,15 +205,27 @@ export class CotizacionesPageComponent implements OnInit {
     if (this.form.invalid) return;
     this.loading = true;
     this.error = '';
+    this.ok = '';
     this.resultado = null;
     const raw = this.form.getRawValue();
+    const payload = {
+      incidente_id: raw.incidente_id.trim(),
+      monto_total: Number(raw.monto_total),
+      tiempo_estimado: (raw.tiempo_estimado || '').trim() || undefined,
+      detalle: raw.detalle.trim(),
+      observaciones: (raw.observaciones || '').trim() || undefined,
+    };
+    if (!navigator.onLine) {
+      this.offlineSync.queueOperation('generar_cotizacion', payload);
+      this.loading = false;
+      this.error = '';
+      this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
+      this.resultado = null;
+      this.form.reset({ incidente_id: '', monto_total: 0, tiempo_estimado: '', detalle: '', observaciones: '' });
+      return;
+    }
     this.pagosService
-      .generarCotizacion({
-        incidente_id: raw.incidente_id.trim(),
-        monto_total: Number(raw.monto_total),
-        detalle: raw.detalle.trim(),
-        observaciones: (raw.observaciones || '').trim() || undefined,
-      })
+      .generarCotizacion(payload)
       .subscribe({
         next: (res) => {
           this.loading = false;

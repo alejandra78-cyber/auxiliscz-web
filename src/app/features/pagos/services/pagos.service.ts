@@ -12,7 +12,12 @@ export interface CotizacionOut {
   id: string;
   incidente_id?: string | null;
   solicitud_id?: string | null;
+  asignacion_id?: string | null;
+  taller_id?: string | null;
+  taller_nombre?: string | null;
+  taller_calificacion?: number | null;
   monto_total: number;
+  tiempo_estimado?: string | null;
   detalle?: string | null;
   estado: string;
   fecha_emision?: string | null;
@@ -49,6 +54,7 @@ export class PagosService {
   generarCotizacion(payload: {
     incidente_id: string;
     monto_total: number;
+    tiempo_estimado?: string;
     detalle: string;
     observaciones?: string;
     validez_hasta?: string;
