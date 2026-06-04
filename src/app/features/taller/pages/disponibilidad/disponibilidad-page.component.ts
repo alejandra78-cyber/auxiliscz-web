@@ -58,6 +58,19 @@ import { AuthService } from '../../../auth/services/auth.service';
         </article>
       </div>
 
+      <section class="services-overview" *ngIf="snapshot">
+        <div>
+          <p class="section-label">Servicios ofrecidos por el taller</p>
+          <p class="section-help">Estos servicios se usan para decidir si el taller puede recibir solicitudes compatibles.</p>
+        </div>
+        <div class="service-chips" *ngIf="serviciosVisibles.length; else sinServicios">
+          <span class="service-chip" *ngFor="let servicio of serviciosVisibles">{{ servicio }}</span>
+        </div>
+        <ng-template #sinServicios>
+          <p class="empty-services">Sin servicios configurados.</p>
+        </ng-template>
+      </section>
+
       <form [formGroup]="form" (ngSubmit)="guardar()" class="form-grid">
         <label>
           Estado operativo
@@ -181,6 +194,34 @@ import { AuthService } from '../../../auth/services/auth.service';
     .estado-ok { background:#dff4e8; color:#0f6f40; }
     .estado-warn { background:#fff1d1; color:#8b5a00; }
     .estado-stop { background:#ffe2df; color:#a11a18; }
+    .services-overview {
+      border: 1px solid #dfe7f5;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fbfdff;
+      display: grid;
+      grid-template-columns: minmax(220px, 0.55fr) 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .section-label { margin:0; color:#1f2b45; font-size:14px; font-weight:800; }
+    .section-help { margin:4px 0 0; color:#62708b; font-size:12px; line-height:1.4; }
+    .service-chips { display:flex; flex-wrap:wrap; gap:8px; min-width:0; }
+    .service-chip {
+      border: 1px solid #cfe0ff;
+      background: #edf4ff;
+      color: #173f7a;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: capitalize;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .empty-services { margin:0; color:#8a5b00; background:#fff6df; border:1px solid #f2d28a; border-radius:10px; padding:8px 10px; font-size:12px; }
     .form-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
     label { display:grid; gap:6px; font-size:13px; font-weight:600; color:#213454; }
     .full { grid-column: 1 / -1; }
@@ -188,7 +229,7 @@ import { AuthService } from '../../../auth/services/auth.service';
     .services legend { padding:0 6px; color:#38527a; font-size:13px; font-weight:700; }
     .location-box { grid-column: 1 / -1; border:1px solid #e4e9f6; border-radius:10px; padding:10px; display:grid; gap:8px; }
     .location-box legend { padding:0 6px; color:#38527a; font-size:13px; font-weight:700; }
-    .map-head { display:flex; justify-content: space-between; align-items: end; gap: 8px; }
+    .map-head { display:flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
     .search-input { flex: 1; }
     .coords { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
     .map-wrap { border-radius: 10px; overflow: hidden; border: 1px solid #d7e2f5; }
@@ -216,6 +257,7 @@ import { AuthService } from '../../../auth/services/auth.service';
     .turnos h3 { margin:0 0 6px; color:#1f2b45; }
     @media (max-width: 980px) {
       .summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .services-overview { grid-template-columns: 1fr; }
       .services { grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
     @media (max-width: 700px) {
@@ -224,6 +266,8 @@ import { AuthService } from '../../../auth/services/auth.service';
       .map-head { flex-direction: column; align-items: stretch; }
       .coords { grid-template-columns: 1fr; }
       .services { grid-template-columns: 1fr; }
+      .service-chips { gap:6px; }
+      .service-chip { width:100%; text-align:center; }
       .map { height: 240px; }
       .location-actions button { width:100%; }
       button[type='submit'] { width:100%; }
@@ -279,6 +323,20 @@ export class DisponibilidadPageComponent implements OnInit, AfterViewInit, OnDes
       return;
     }
     this.cargar();
+  }
+
+  get serviciosVisibles(): string[] {
+    const servicios = this.snapshot?.servicios?.length
+      ? this.snapshot.servicios
+      : Array.from(this.selectedServicios);
+    return servicios.map((s) => this.formatearServicio(s));
+  }
+
+  private formatearServicio(servicio: string): string {
+    return (servicio || '')
+      .replace(/_/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
   }
 
   ngAfterViewInit(): void {

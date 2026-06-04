@@ -7,6 +7,7 @@ import {
   SolicitudServicio,
   SolicitudServicioDetalle,
 } from '../../services/asignacion.service';
+import { OfflineSyncService } from '../../../emergencia/services/offline-sync.service';
 
 @Component({
   selector: 'app-solicitudes-page',
@@ -204,9 +205,13 @@ export class SolicitudesPageComponent implements OnInit {
   fechaHasta = '';
   textoBusqueda = '';
 
-  constructor(private readonly asignacionService: AsignacionService) {}
+  constructor(
+    private readonly asignacionService: AsignacionService,
+    private readonly offlineSync: OfflineSyncService,
+  ) {}
 
   ngOnInit(): void {
+    this.offlineSync.startAutoSync();
     this.cargar();
   }
 
@@ -221,6 +226,14 @@ export class SolicitudesPageComponent implements OnInit {
   cargar(): void {
     this.loading = true;
     this.error = '';
+    if (!navigator.onLine) {
+      this.loading = false;
+      this.solicitudes = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+      this.error = this.solicitudes.length
+        ? 'Sin conexión. Estás viendo solicitudes guardadas localmente.'
+        : 'Sin conexión. No hay solicitudes guardadas en este dispositivo.';
+      return;
+    }
     this.asignacionService.listarSolicitudes({
       estado: this.filtroEstado || undefined,
       fecha_desde: this.fechaDesde || undefined,
@@ -229,6 +242,7 @@ export class SolicitudesPageComponent implements OnInit {
       next: (rows) => {
         this.loading = false;
         this.solicitudes = rows ?? [];
+        this.offlineSync.cacheSolicitudes(this.solicitudes);
       },
       error: (err) => {
         this.loading = false;
@@ -240,9 +254,22 @@ export class SolicitudesPageComponent implements OnInit {
   verDetalle(row: SolicitudServicio): void {
     this.detalle = null;
     const id = row.incidente_id || row.id;
+    if (!navigator.onLine) {
+      const cached = this.offlineSync.readCachedSolicitudDetalle<SolicitudServicioDetalle>(id)
+        || this.offlineSync.readCachedSolicitudDetalle<SolicitudServicioDetalle>(row.id);
+      if (cached) {
+        this.detalle = cached;
+        this.error = 'Sin conexión. Estás viendo el último detalle guardado localmente.';
+        return;
+      }
+      this.detalle = { ...row, evidencias: [] };
+      this.error = 'Sin conexión. Detalle limitado guardado localmente.';
+      return;
+    }
     this.asignacionService.obtenerDetalleSolicitud(id).subscribe({
       next: (res) => {
         this.detalle = res;
+        this.offlineSync.cacheSolicitudDetalle(res);
       },
       error: (err) => {
         this.error = err?.error?.detail ?? 'No se pudo cargar detalle';

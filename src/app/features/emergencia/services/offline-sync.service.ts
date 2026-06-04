@@ -26,6 +26,8 @@ export interface OfflineOperation {
 @Injectable({ providedIn: 'root' })
 export class OfflineSyncService {
   private readonly storageKey = 'cu30_offline_actions';
+  private readonly solicitudesCacheKey = 'cu30_taller_solicitudes_cache';
+  private readonly detallesCacheKey = 'cu30_taller_solicitudes_detalle_cache';
   private readonly apiBase = environment.apiUrl.endsWith('/api')
     ? environment.apiUrl
     : `${environment.apiUrl}/api`;
@@ -76,6 +78,47 @@ export class OfflineSyncService {
       return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
+    }
+  }
+
+  cacheSolicitudes<T>(rows: T[]): void {
+    try {
+      localStorage.setItem(this.solicitudesCacheKey, JSON.stringify(rows || []));
+    } catch {
+      // Si el navegador no permite escribir cache, el flujo online sigue funcionando.
+    }
+  }
+
+  readCachedSolicitudes<T>(): T[] {
+    try {
+      const raw = localStorage.getItem(this.solicitudesCacheKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  cacheSolicitudDetalle<T extends { id?: string | null; incidente_id?: string | null }>(detalle: T): void {
+    const keys = [detalle?.id, detalle?.incidente_id].filter(Boolean).map(String);
+    if (!keys.length) return;
+    try {
+      const raw = localStorage.getItem(this.detallesCacheKey);
+      const cache = raw ? JSON.parse(raw) : {};
+      for (const key of keys) cache[key] = detalle;
+      localStorage.setItem(this.detallesCacheKey, JSON.stringify(cache));
+    } catch {
+      // Cache opcional para CU30 web offline.
+    }
+  }
+
+  readCachedSolicitudDetalle<T>(id: string): T | null {
+    try {
+      const raw = localStorage.getItem(this.detallesCacheKey);
+      const cache = raw ? JSON.parse(raw) : {};
+      return cache?.[id] ?? null;
+    } catch {
+      return null;
     }
   }
 

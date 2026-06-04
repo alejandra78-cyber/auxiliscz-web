@@ -168,9 +168,19 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
   }
 
   cargarSolicitudes(): void {
+    if (!navigator.onLine) {
+      const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+      this.solicitudes = (cached ?? []).filter((s) => this.puedeEvaluar(s));
+      this.error = this.solicitudes.length
+        ? 'Sin conexión. Estás viendo solicitudes guardadas localmente.'
+        : 'Sin conexión. Abre esta pantalla con internet al menos una vez para guardar solicitudes.';
+      return;
+    }
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
-        this.solicitudes = (rows ?? []).filter((s) => this.puedeEvaluar(s));
+        const data = rows ?? [];
+        this.offlineSync.cacheSolicitudes(data);
+        this.solicitudes = data.filter((s) => this.puedeEvaluar(s));
         const selectedId = this.form.getRawValue().solicitudId;
         if (selectedId) this.cargarDetalle(selectedId);
       },
@@ -182,9 +192,33 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
 
   cargarDetalle(id: string): void {
     const reqId = this.solicitudes.find((x) => x.id === id)?.incidente_id || id;
+    if (!navigator.onLine) {
+      const cached = this.offlineSync.readCachedSolicitudDetalle<SolicitudServicioDetalle>(reqId)
+        || this.offlineSync.readCachedSolicitudDetalle<SolicitudServicioDetalle>(id);
+      if (cached) {
+        this.detalle = cached;
+        this.error = 'Sin conexión. Estás viendo el último detalle guardado localmente.';
+        setTimeout(() => {
+          this.ensureMap();
+          this.actualizarMapaUbicacion();
+        }, 0);
+        return;
+      }
+      const row = this.solicitudes.find((x) => x.id === id || x.incidente_id === id);
+      if (row) {
+        this.detalle = { ...row, evidencias: [] };
+        this.error = 'Sin conexión. Detalle limitado; puedes aceptar o rechazar y se sincronizará luego.';
+        setTimeout(() => {
+          this.ensureMap();
+          this.actualizarMapaUbicacion();
+        }, 0);
+        return;
+      }
+    }
     this.asignacionService.obtenerDetalleSolicitud(reqId).subscribe({
       next: (res) => {
         this.detalle = res;
+        this.offlineSync.cacheSolicitudDetalle(res);
         setTimeout(() => {
           this.ensureMap();
           this.actualizarMapaUbicacion();
@@ -197,9 +231,12 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
     });
   }
 
-  puedeEvaluar(s: Pick<SolicitudServicio, 'estado'>): boolean {
-    const est = (s.estado || '').toLowerCase();
-    return ['asignada', 'pendiente_respuesta'].includes(est);
+  puedeEvaluar(s: Pick<SolicitudServicio, 'estado' | 'estado_asignacion'>): boolean {
+    const estadoSolicitud = (s.estado || '').toLowerCase();
+    const estadoAsignacion = (s.estado_asignacion || '').toLowerCase();
+    return [estadoSolicitud, estadoAsignacion].some((est) =>
+      ['asignada', 'pendiente_respuesta'].includes(est),
+    );
   }
 
   aceptar(): void {
