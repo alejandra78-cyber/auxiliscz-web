@@ -19,9 +19,9 @@ import {
       <p class="muted">Selecciona un técnico disponible de tu taller y confirma la asignación.</p>
 
       <form [formGroup]="form" (ngSubmit)="guardar()" class="grid">
-        <label>Solicitud aceptada</label>
+        <label>Solicitud con cotización aceptada</label>
         <select formControlName="solicitudId" (change)="onSolicitudChange()">
-          <option value="">Selecciona una solicitud aceptada</option>
+          <option value="">Selecciona una solicitud confirmada</option>
           <option *ngFor="let s of solicitudesAsignables" [value]="s.id">
             {{ s.codigo_solicitud || s.id }} · {{ s.cliente_nombre || 'Cliente' }} · {{ s.tipo || 'incierto' }} · {{ estadoActual(s) }}
           </option>
@@ -60,6 +60,10 @@ import {
         <p><strong>Estado actual:</strong> {{ estadoActual(seleccionada) }}</p>
         <p><strong>Resumen IA:</strong> {{ seleccionada.resumen_ia || '-' }}</p>
       </section>
+
+      <p *ngIf="!loading && solicitudesAsignables.length === 0 && !error" class="muted">
+        No hay solicitudes con cotización aceptada para tu taller.
+      </p>
 
       <section class="panel ok" *ngIf="resultado">
         <h3>Resultado</h3>
@@ -130,12 +134,13 @@ export class AsignarServicioPageComponent implements OnInit {
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
         this.solicitudesAsignables = (rows || []).filter((s) => {
-          const st = this.estadoActual(s);
-          return ['aceptada'].includes(st);
+          const estadoAsignacion = (s.estado_asignacion || '').toLowerCase();
+          const estadoSolicitud = (s.estado || '').toLowerCase();
+          return estadoAsignacion === 'confirmada' && estadoSolicitud === 'taller_confirmado';
         });
       },
       error: (err) => {
-        this.error = err?.error?.detail ?? 'No se pudieron cargar solicitudes aceptadas';
+        this.error = err?.error?.detail ?? 'No se pudieron cargar solicitudes con cotización aceptada';
       },
     });
   }
