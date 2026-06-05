@@ -368,6 +368,13 @@ export class TallerService {
     return this.http.post<TecnicoUbicacionSendResponse>(`${this.apiBase}/tecnico/ubicacion`, payload);
   }
 
+  enviarAccionSeguimientoTecnico(asignacionId: string, accion: string): Observable<TecnicoUbicacionSendResponse> {
+    return this.http.post<TecnicoUbicacionSendResponse>(`${this.apiBase}/tecnico/seguimiento/accion`, {
+      asignacion_id: asignacionId,
+      accion,
+    });
+  }
+
   obtenerHistorialAtenciones(): Observable<HistorialAtencion[]> {
     return this.http.get<HistorialAtencion[]>(`${this.apiBase}/taller/mi-taller/historial-atenciones`);
   }

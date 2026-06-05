@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { WebPushService } from '../../../../core/notifications/web-push.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -168,6 +169,7 @@ export class LoginComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
+    private readonly webPushService: WebPushService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
   ) {}
@@ -216,6 +218,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
         this.loading = false;
+        void this.webPushService.registerDevice();
         this.router.navigate(['/inicio']);
       },
       error: (err) => {

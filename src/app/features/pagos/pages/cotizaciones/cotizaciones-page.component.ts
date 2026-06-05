@@ -166,13 +166,18 @@ export class CotizacionesPageComponent implements OnInit {
 
   cargarSolicitudesDiagnostico(): void {
     this.error = '';
+    if (!navigator.onLine) {
+      const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+      this.solicitudesDiagnostico = this.filtrarSolicitudesCotizables(cached || []);
+      this.error = this.solicitudesDiagnostico.length
+        ? 'Sin conexión. Estás viendo solicitudes guardadas localmente.'
+        : 'Sin conexión. No hay solicitudes guardadas para cotizar.';
+      return;
+    }
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
-        this.solicitudesDiagnostico = (rows || []).filter((s) =>
-          ['aceptada_para_cotizar', 'cotizacion_enviada'].includes(
-            this.normalizarEstadoAsignacion(s.estado_asignacion || s.estado),
-          ),
-        );
+        this.offlineSync.cacheSolicitudes(rows || []);
+        this.solicitudesDiagnostico = this.filtrarSolicitudesCotizables(rows || []);
       },
       error: (err) => {
         this.error = err?.error?.detail ?? 'No se pudieron cargar solicitudes para cotización';
@@ -217,6 +222,7 @@ export class CotizacionesPageComponent implements OnInit {
     };
     if (!navigator.onLine) {
       this.offlineSync.queueOperation('generar_cotizacion', payload);
+      this.marcarCotizacionLocal(payload.incidente_id);
       this.loading = false;
       this.error = '';
       this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
@@ -230,6 +236,7 @@ export class CotizacionesPageComponent implements OnInit {
         next: (res) => {
           this.loading = false;
           this.resultado = res;
+          this.form.reset({ incidente_id: '', monto_total: 0, tiempo_estimado: '', detalle: '', observaciones: '' });
           this.cargarSolicitudesDiagnostico();
         },
         error: (err) => {
@@ -240,5 +247,29 @@ export class CotizacionesPageComponent implements OnInit {
             : (detail || 'No se pudo generar cotización');
         },
       });
+  }
+
+  private filtrarSolicitudesCotizables(rows: SolicitudServicio[]): SolicitudServicio[] {
+    return (rows || []).filter((s) =>
+      this.normalizarEstadoAsignacion(s.estado_asignacion || s.estado) === 'aceptada_para_cotizar',
+    );
+  }
+
+  private marcarCotizacionLocal(incidenteId: string): void {
+    const actualizar = <T extends SolicitudServicio>(row: T): T => {
+      const match = String(row.id || '') === incidenteId || String(row.incidente_id || '') === incidenteId;
+      if (!match) return row;
+      return {
+        ...row,
+        estado_asignacion: 'cotizacion_enviada',
+        estado: 'cotizaciones_recibidas',
+      };
+    };
+
+    const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+    this.offlineSync.cacheSolicitudes(cached.map(actualizar));
+    this.solicitudesDiagnostico = this.solicitudesDiagnostico
+      .map(actualizar)
+      .filter((s) => this.normalizarEstadoAsignacion(s.estado_asignacion || s.estado) === 'aceptada_para_cotizar');
   }
 }

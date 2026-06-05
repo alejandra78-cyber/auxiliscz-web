@@ -3,6 +3,7 @@ import { Component, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { AuthService } from '../features/auth/services/auth.service';
+import { EmergenciaService, NotificacionSolicitud } from '../features/emergencia/services/emergencia.service';
 import { TallerService } from '../features/taller/services/taller.service';
 
 type UserRole = 'admin' | 'taller' | 'tecnico' | 'cliente' | 'conductor' | '';
@@ -117,7 +118,41 @@ interface MenuSection {
             </button>
             <h1>Panel de Gestión de Emergencias</h1>
           </div>
-          <span class="role-pill">{{ sessionLabel }}</span>
+          <div class="top-actions">
+            <div class="notifications-wrap">
+              <button
+                type="button"
+                class="bell-btn"
+                aria-label="Ver notificaciones"
+                (click)="toggleNotifications()"
+              >
+                🔔
+                <span *ngIf="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+              </button>
+              <section *ngIf="notificationsOpen" class="notifications-popover">
+                <div class="notif-head">
+                  <strong>Notificaciones</strong>
+                  <button type="button" (click)="loadNotifications()">Actualizar</button>
+                </div>
+                <div *ngIf="notificationsLoading" class="notif-muted">Cargando...</div>
+                <div *ngIf="!notificationsLoading && notifications.length === 0" class="notif-muted">
+                  No tienes notificaciones.
+                </div>
+                <button
+                  *ngFor="let n of notifications"
+                  type="button"
+                  class="notif-item"
+                  [class.unread]="n.estado !== 'leida'"
+                  (click)="openNotification(n)"
+                >
+                  <strong>{{ n.titulo }}</strong>
+                  <span>{{ n.mensaje }}</span>
+                  <small>{{ n.tipo }} · {{ n.estado }}</small>
+                </button>
+              </section>
+            </div>
+            <span class="role-pill">{{ sessionLabel }}</span>
+          </div>
         </header>
         <main class="panel">
           <router-outlet></router-outlet>
@@ -417,6 +452,9 @@ export class DashboardLayoutComponent {
   sessionLabel = 'USUARIO';
   menuSections: MenuSection[] = [];
   mobileMenuOpen = false;
+  notificationsOpen = false;
+  notificationsLoading = false;
+  notifications: NotificacionSolicitud[] = [];
   private readonly openSections = new Set<string>();
 
   private readonly sections: MenuSection[] = [
@@ -490,6 +528,7 @@ export class DashboardLayoutComponent {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly emergenciaService: EmergenciaService,
     private readonly tallerService: TallerService,
     private readonly router: Router,
   ) {
@@ -507,6 +546,11 @@ export class DashboardLayoutComponent {
       });
     }
     this.menuSections = this.sections;
+    this.loadNotifications();
+  }
+
+  get unreadCount(): number {
+    return this.notifications.filter((n) => n.estado !== 'leida').length;
   }
 
   private buildSessionLabel(role: UserRole): string {
@@ -544,6 +588,36 @@ export class DashboardLayoutComponent {
     if (window.innerWidth <= 980) {
       this.closeMobileMenu();
     }
+  }
+
+  toggleNotifications(): void {
+    this.notificationsOpen = !this.notificationsOpen;
+    if (this.notificationsOpen) {
+      this.loadNotifications();
+    }
+  }
+
+  loadNotifications(): void {
+    if (!this.authService.isAuthenticated()) return;
+    this.notificationsLoading = true;
+    this.emergenciaService.listarNotificaciones().subscribe({
+      next: (rows) => {
+        this.notifications = rows.slice(0, 10);
+        this.notificationsLoading = false;
+      },
+      error: () => {
+        this.notificationsLoading = false;
+      },
+    });
+  }
+
+  openNotification(notificacion: NotificacionSolicitud): void {
+    this.notificationsOpen = false;
+    if (notificacion.tipo.includes('cotizacion')) {
+      this.router.navigate(['/pagos/gestionar-cotizacion']);
+      return;
+    }
+    this.router.navigate(['/registro-emergencias/comunicacion-notificaciones']);
   }
 
   @HostListener('window:resize')

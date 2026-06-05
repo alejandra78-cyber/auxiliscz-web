@@ -247,6 +247,7 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
     const reqId = this.detalle.incidente_id || this.detalle.id;
     if (!navigator.onLine) {
       this.offlineSync.queueOperation('aceptar_solicitud', { incidente_id: reqId });
+      this.marcarEvaluacionLocal(reqId, 'aceptada_para_cotizar');
       this.loading = false;
       this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
       return;
@@ -277,6 +278,7 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
         incidente_id: reqId,
         motivo_rechazo: motivo,
       });
+      this.marcarEvaluacionLocal(reqId, 'rechazada');
       this.loading = false;
       this.ok = 'Acción guardada sin conexión. Se sincronizará cuando vuelva internet.';
       return;
@@ -421,6 +423,28 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
     this.markerIncidente.setLatLng(latLng(lat, lng));
     this.map.setView([lat, lng], 14);
     this.map.invalidateSize();
+  }
+
+  private marcarEvaluacionLocal(incidenteId: string, estadoAsignacion: string): void {
+    const actualizar = <T extends SolicitudServicio>(row: T): T => {
+      const match = String(row.id || '') === incidenteId || String(row.incidente_id || '') === incidenteId;
+      if (!match) return row;
+      return {
+        ...row,
+        estado_asignacion: estadoAsignacion,
+        estado: estadoAsignacion === 'aceptada_para_cotizar' ? 'esperando_cotizaciones' : row.estado,
+      };
+    };
+
+    const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+    this.offlineSync.cacheSolicitudes(cached.map(actualizar));
+    this.solicitudes = this.solicitudes.map(actualizar).filter((s) => this.puedeEvaluar(s));
+
+    if (this.detalle) {
+      const actualizado = actualizar(this.detalle);
+      this.detalle = actualizado;
+      this.offlineSync.cacheSolicitudDetalle(actualizado);
+    }
   }
 
   private readonly onResize = () => this.map?.invalidateSize();

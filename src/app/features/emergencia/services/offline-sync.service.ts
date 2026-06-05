@@ -168,6 +168,9 @@ export class OfflineSyncService {
     } finally {
       this.syncing = false;
       this.writeAll(rows);
+      if (navigator.onLine && this.readAll().some((op) => op.estado_sync === 'pendiente_sincronizacion')) {
+        setTimeout(() => void this.syncPending(), 300);
+      }
     }
   }
 

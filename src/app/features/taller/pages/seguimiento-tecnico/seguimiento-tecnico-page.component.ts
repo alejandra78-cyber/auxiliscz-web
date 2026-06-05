@@ -30,6 +30,12 @@ import {
         <button (click)="iniciarSeguimiento()" [disabled]="sharing || !asignacionSeleccionadaId">
           Compartir ubicación
         </button>
+        <button class="primary-soft" (click)="marcarLlegada()" [disabled]="sending || !asignacionSeleccionadaId">
+          Llegué al lugar
+        </button>
+        <button class="primary-soft" (click)="iniciarAtencion()" [disabled]="sending || !asignacionSeleccionadaId">
+          Iniciar atención
+        </button>
         <button class="ghost" (click)="detenerSeguimiento()" [disabled]="!sharing">
           Detener seguimiento
         </button>
@@ -47,6 +53,7 @@ import {
     .card { background:#fff; border:1px solid #e2e6ef; border-radius:12px; padding:16px; }
     .grid { display:grid; gap:8px; margin-top: 8px; }
     .actions { display:flex; gap:8px; margin-top:12px; flex-wrap: wrap; }
+    .primary-soft { background:#eef4ff; color:#1f3a7a; border:1px solid #cfd8ef; }
     .ghost { background:#fff; color:#1f3a7a; border:1px solid #cfd8ef; }
     .ok { color:#027a48; margin-top: 10px; }
     .error { color:#b42318; margin-top: 10px; }
@@ -139,6 +146,14 @@ export class SeguimientoTecnicoPageComponent implements OnInit, OnDestroy {
     this.sending = false;
   }
 
+  marcarLlegada(): void {
+    this.enviarAccionSeguimiento('llegue_al_lugar');
+  }
+
+  iniciarAtencion(): void {
+    this.enviarAccionSeguimiento('iniciar_atencion');
+  }
+
   private enviarUbicacion(latitud: number, longitud: number): void {
     if (this.sending || !this.asignacionSeleccionadaId) return;
     this.sending = true;
@@ -159,5 +174,22 @@ export class SeguimientoTecnicoPageComponent implements OnInit, OnDestroy {
           this.error = err?.error?.detail ?? 'No se pudo enviar ubicación';
         },
       });
+  }
+
+  private enviarAccionSeguimiento(accion: string): void {
+    if (this.sending || !this.asignacionSeleccionadaId) return;
+    this.sending = true;
+    this.tallerService.enviarAccionSeguimientoTecnico(this.asignacionSeleccionadaId, accion).subscribe({
+      next: (res) => {
+        this.sending = false;
+        this.ultimaUbicacion = `${res.mensaje} · ${res.ultima_actualizacion}`;
+        this.error = '';
+        this.cargarServicios();
+      },
+      error: (err) => {
+        this.sending = false;
+        this.error = err?.error?.detail ?? 'No se pudo actualizar el seguimiento';
+      },
+    });
   }
 }
