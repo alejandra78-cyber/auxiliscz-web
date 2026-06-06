@@ -24,29 +24,31 @@ import { OfflineSyncService } from '../../../emergencia/services/offline-sync.se
       <section class="filters">
         <label>
           Estado
-          <select [(ngModel)]="filtroEstado" (change)="cargar()">
+          <select [(ngModel)]="filtroEstado" (change)="cargar(true)">
             <option value="">Todos</option>
             <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
           </select>
         </label>
         <label>
           Fecha desde
-          <input type="date" [(ngModel)]="fechaDesde" (change)="cargar()" />
+          <input type="date" [(ngModel)]="fechaDesde" (change)="cargar(true)" />
         </label>
         <label>
           Fecha hasta
-          <input type="date" [(ngModel)]="fechaHasta" (change)="cargar()" />
+          <input type="date" [(ngModel)]="fechaHasta" (change)="cargar(true)" />
         </label>
         <label class="search">
           Buscar
           <input type="text" [(ngModel)]="textoBusqueda" placeholder="Código, cliente, tipo..." />
         </label>
-        <button type="button" (click)="cargar()" [disabled]="loading">{{ loading ? 'Actualizando...' : 'Actualizar' }}</button>
+        <button type="button" (click)="cargar(true)" [disabled]="loading">{{ loading ? 'Actualizando...' : 'Actualizar' }}</button>
       </section>
 
       <p class="error" *ngIf="error">{{ error }}</p>
 
-      <div class="desktop-table" *ngIf="!loading && solicitudesFiltradas.length">
+      <p class="muted" *ngIf="loading && solicitudesFiltradas.length">Actualizando en segundo plano...</p>
+
+      <div class="desktop-table" *ngIf="solicitudesFiltradas.length">
         <table>
           <thead>
             <tr>
@@ -75,7 +77,7 @@ import { OfflineSyncService } from '../../../emergencia/services/offline-sync.se
         </table>
       </div>
 
-      <div class="mobile-list" *ngIf="!loading && solicitudesFiltradas.length">
+      <div class="mobile-list" *ngIf="solicitudesFiltradas.length">
         <article class="card" *ngFor="let s of solicitudesFiltradas">
           <div class="head">
             <h4>{{ s.codigo_solicitud || ('SOL-' + s.id.slice(0, 8).toUpperCase()) }}</h4>
@@ -212,7 +214,7 @@ export class SolicitudesPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.offlineSync.startAutoSync();
-    this.cargar();
+    this.cargar(false);
   }
 
   get solicitudesFiltradas(): SolicitudServicio[] {
@@ -223,12 +225,17 @@ export class SolicitudesPageComponent implements OnInit {
     );
   }
 
-  cargar(): void {
+  cargar(force = false): void {
+    const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+    if (!force && cached.length) {
+      this.solicitudes = cached;
+      this.error = '';
+    }
     this.loading = true;
     this.error = '';
     if (!navigator.onLine) {
       this.loading = false;
-      this.solicitudes = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+      this.solicitudes = cached;
       this.error = this.solicitudes.length
         ? 'Sin conexión. Estás viendo solicitudes guardadas localmente.'
         : 'Sin conexión. No hay solicitudes guardadas en este dispositivo.';

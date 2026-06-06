@@ -17,6 +17,8 @@ import { OfflineSyncService } from '../../../emergencia/services/offline-sync.se
       <p class="muted">Revisa el incidente asignado a tu taller y decide si aceptas o rechazas.</p>
 
       <label>Solicitud asignada</label>
+      <p class="muted" *ngIf="loadingSolicitudes && solicitudes.length">Actualizando solicitudes en segundo plano...</p>
+      <p class="muted" *ngIf="loadingSolicitudes && !solicitudes.length">Cargando solicitudes...</p>
       <select [formControl]="form.controls.solicitudId">
         <option value="">Selecciona una solicitud</option>
         <option *ngFor="let s of solicitudes" [value]="s.id">
@@ -130,6 +132,7 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
   solicitudes: SolicitudServicio[] = [];
   detalle: SolicitudServicioDetalle | null = null;
   loading = false;
+  loadingSolicitudes = false;
   ok = '';
   error = '';
   private map: Map | null = null;
@@ -168,16 +171,22 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
   }
 
   cargarSolicitudes(): void {
+    const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
+    if (cached.length) {
+      this.solicitudes = cached.filter((s) => this.puedeEvaluar(s));
+      this.error = '';
+    }
     if (!navigator.onLine) {
-      const cached = this.offlineSync.readCachedSolicitudes<SolicitudServicio>();
       this.solicitudes = (cached ?? []).filter((s) => this.puedeEvaluar(s));
       this.error = this.solicitudes.length
         ? 'Sin conexión. Estás viendo solicitudes guardadas localmente.'
         : 'Sin conexión. Abre esta pantalla con internet al menos una vez para guardar solicitudes.';
       return;
     }
+    this.loadingSolicitudes = true;
     this.asignacionService.listarSolicitudes().subscribe({
       next: (rows) => {
+        this.loadingSolicitudes = false;
         const data = rows ?? [];
         this.offlineSync.cacheSolicitudes(data);
         this.solicitudes = data.filter((s) => this.puedeEvaluar(s));
@@ -185,6 +194,7 @@ export class EvaluarSolicitudPageComponent implements OnInit, AfterViewInit, OnD
         if (selectedId) this.cargarDetalle(selectedId);
       },
       error: (err) => {
+        this.loadingSolicitudes = false;
         this.error = err?.error?.detail ?? 'No se pudieron cargar solicitudes';
       },
     });

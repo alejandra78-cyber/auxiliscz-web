@@ -375,6 +375,20 @@ export class TallerService {
     });
   }
 
+  registrarTrabajoCompletadoTecnico(
+    asignacionId: string,
+    descripcion: string,
+    observaciones?: string,
+    evidencias: string[] = [],
+  ): Observable<any> {
+    return this.http.post(`${this.apiBase}/tecnico/trabajo-completado`, {
+      asignacion_id: asignacionId,
+      descripcion,
+      observaciones,
+      evidencias,
+    });
+  }
+
   obtenerHistorialAtenciones(): Observable<HistorialAtencion[]> {
     return this.http.get<HistorialAtencion[]>(`${this.apiBase}/taller/mi-taller/historial-atenciones`);
   }

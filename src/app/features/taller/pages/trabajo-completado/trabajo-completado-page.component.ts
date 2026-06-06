@@ -2,7 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { ServicioActivo, TallerService } from '../../services/taller.service';
+import { AuthService } from '../../../auth/services/auth.service';
+import { ServicioActivo, TallerService, TecnicoServicioAsignado } from '../../services/taller.service';
 
 @Component({
   selector: 'app-trabajo-completado-page',
@@ -16,10 +17,13 @@ import { ServicioActivo, TallerService } from '../../services/taller.service';
 
       <form [formGroup]="form" (ngSubmit)="guardar()" class="grid">
         <label>Solicitud activa</label>
-        <select formControlName="incidenteId">
+        <select formControlName="servicioId">
           <option value="" disabled>Selecciona una solicitud</option>
           <option *ngFor="let s of servicios" [value]="s.incidente_id">
             {{ s.codigo_solicitud }} · {{ s.cliente || 'Cliente' }} · {{ s.tipo_servicio || 'servicio general' }} · {{ labelEstado(s.estado) }}
+          </option>
+          <option *ngFor="let s of serviciosTecnico" [value]="s.asignacion_id">
+            {{ s.codigo_solicitud }} · {{ s.cliente_nombre || 'Cliente' }} · {{ s.tipo_problema || 'servicio general' }} · {{ labelEstado(s.estado_servicio) }}
           </option>
         </select>
 
@@ -32,14 +36,14 @@ import { ServicioActivo, TallerService } from '../../services/taller.service';
         <label>Evidencia (URL opcional)</label>
         <textarea rows="2" formControlName="evidenciaUrl" placeholder="https://... (opcional)"></textarea>
 
-        <button type="submit" [disabled]="loading || form.invalid || !servicios.length">
+        <button type="submit" [disabled]="loading || form.invalid || (!servicios.length && !serviciosTecnico.length)">
           {{ loading ? 'Guardando...' : 'Marcar como completado' }}
         </button>
       </form>
 
       <p *ngIf="ok" class="ok">{{ ok }}</p>
       <p *ngIf="error" class="error">{{ error }}</p>
-      <p *ngIf="!loadingServicios && !servicios.length" class="muted">
+      <p *ngIf="!loadingServicios && !servicios.length && !serviciosTecnico.length" class="muted">
         No hay solicitudes activas para completar.
       </p>
     </section>
@@ -62,9 +66,11 @@ export class TrabajoCompletadoPageComponent implements OnInit {
   ok = '';
   error = '';
   servicios: ServicioActivo[] = [];
+  serviciosTecnico: TecnicoServicioAsignado[] = [];
+  role = '';
 
   readonly form = this.fb.nonNullable.group({
-    incidenteId: ['', [Validators.required]],
+    servicioId: ['', [Validators.required]],
     descripcionTrabajo: ['', [Validators.required, Validators.minLength(3)]],
     observacion: [''],
     evidenciaUrl: [''],
@@ -73,9 +79,11 @@ export class TrabajoCompletadoPageComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly tallerService: TallerService,
+    private readonly authService: AuthService,
   ) {}
 
   ngOnInit(): void {
+    this.role = this.authService.getCurrentRole();
     this.cargarServiciosActivos();
   }
 
@@ -104,12 +112,29 @@ export class TrabajoCompletadoPageComponent implements OnInit {
   cargarServiciosActivos(): void {
     this.loadingServicios = true;
     this.error = '';
+    if (this.role === 'tecnico') {
+      this.tallerService.listarMisServiciosAsignadosTecnico().subscribe({
+        next: (rows) => {
+          this.loadingServicios = false;
+          this.serviciosTecnico = rows;
+          if (rows.length) {
+            this.form.patchValue({ servicioId: rows[0].asignacion_id });
+          }
+        },
+        error: (err) => {
+          this.loadingServicios = false;
+          this.error = err?.error?.detail ?? 'No se pudo cargar trabajos activos';
+        },
+      });
+      return;
+    }
+
     this.tallerService.listarServiciosActivos().subscribe({
       next: (rows) => {
         this.loadingServicios = false;
         this.servicios = rows;
         if (rows.length) {
-          this.form.patchValue({ incidenteId: rows[0].incidente_id });
+          this.form.patchValue({ servicioId: rows[0].incidente_id });
         }
       },
       error: (err) => {
@@ -125,13 +150,22 @@ export class TrabajoCompletadoPageComponent implements OnInit {
     this.ok = '';
     this.error = '';
 
-    const { incidenteId, descripcionTrabajo, observacion, evidenciaUrl } = this.form.getRawValue();
-    this.tallerService.registrarTrabajoCompletado(
-      incidenteId,
-      descripcionTrabajo.trim(),
-      observacion || undefined,
-      evidenciaUrl || undefined,
-    ).subscribe({
+    const { servicioId, descripcionTrabajo, observacion, evidenciaUrl } = this.form.getRawValue();
+    const evidencias = evidenciaUrl?.trim() ? [evidenciaUrl.trim()] : [];
+    const request$ = this.role === 'tecnico'
+      ? this.tallerService.registrarTrabajoCompletadoTecnico(
+          servicioId,
+          descripcionTrabajo.trim(),
+          observacion || undefined,
+          evidencias,
+        )
+      : this.tallerService.registrarTrabajoCompletado(
+          servicioId,
+          descripcionTrabajo.trim(),
+          observacion || undefined,
+          evidenciaUrl || undefined,
+        );
+    request$.subscribe({
       next: () => {
         this.loading = false;
         this.ok = 'Trabajo completado registrado';

@@ -136,7 +136,17 @@ export class AsignarServicioPageComponent implements OnInit {
         this.solicitudesAsignables = (rows || []).filter((s) => {
           const estadoAsignacion = (s.estado_asignacion || '').toLowerCase();
           const estadoSolicitud = (s.estado || '').toLowerCase();
-          return estadoAsignacion === 'confirmada' && estadoSolicitud === 'taller_confirmado';
+          const asignacionConfirmada = [
+            'confirmada',
+            'taller_confirmado',
+            'cotizacion_aceptada',
+          ].includes(estadoAsignacion);
+          const solicitudConfirmada = [
+            'taller_confirmado',
+            'cotizacion_aceptada',
+            'confirmada',
+          ].includes(estadoSolicitud);
+          return asignacionConfirmada && solicitudConfirmada;
         });
       },
       error: (err) => {
