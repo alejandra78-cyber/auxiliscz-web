@@ -15,6 +15,7 @@ type ActorLabel =
   | 'Técnico'
   | 'Taller/Técnico'
   | 'Cliente/Taller'
+  | 'Admin/Taller'
   | 'Admin'
   | 'Taller/Sistema';
 
@@ -522,6 +523,7 @@ export class DashboardLayoutComponent {
         { label: 'Gestionar tenants', actor: 'Admin', path: '/admin-reportes/tenants', roles: ['admin'] },
         { label: 'Aprobar talleres', actor: 'Admin', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
         { label: 'Reportes y métricas', actor: 'Admin', path: '/admin-reportes/reportes-metricas', roles: ['admin'] },
+        { label: 'Dashboard KPIs Operacionales', actor: 'Admin/Taller', path: '/admin-reportes/kpis-operacionales', roles: ['admin', 'taller'] },
       ],
     },
   ];

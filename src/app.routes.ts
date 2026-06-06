@@ -25,6 +25,7 @@ import { RegistrarTallerPageComponent } from './app/features/taller/pages/regist
 import { UsuariosPageComponent } from './app/features/admin/pages/usuarios/usuarios-page.component';
 import { ReportesPageComponent } from './app/features/admin/pages/reportes/reportes-page.component';
 import { TenantsPageComponent } from './app/features/admin/pages/tenants/tenants-page.component';
+import { KpisTenantPageComponent } from './app/features/admin/pages/kpis-tenant/kpis-tenant-page.component';
 
 export const appRoutes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -191,6 +192,11 @@ export const appRoutes: Routes = [
         path: 'admin-reportes/reportes-metricas',
         component: ReportesPageComponent,
         canActivate: [roleGuard(['admin'])],
+      },
+      {
+        path: 'admin-reportes/kpis-operacionales',
+        component: KpisTenantPageComponent,
+        canActivate: [roleGuard(['admin', 'taller'])],
       },
 
       // Compatibilidad rutas antiguas

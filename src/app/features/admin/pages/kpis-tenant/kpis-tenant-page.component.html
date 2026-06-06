@@ -1,0 +1,178 @@
+<section class="kpi-page">
+  <div class="dashboard-shell">
+    <header class="hero">
+      <div>
+        <span class="eyebrow">Analítica operacional</span>
+        <h2>KPIs por tenant</h2>
+        <p>Indicadores reales de asignación, llegada, cancelaciones, zonas y cumplimiento SLA.</p>
+      </div>
+      <div class="hero-summary">
+        <span>Vista actual</span>
+        <strong>{{ data?.tenant_nombre || (isAdmin ? 'Todos los tenants' : 'Mi tenant') }}</strong>
+      </div>
+    </header>
+
+    <form class="filters" (ngSubmit)="cargar()">
+      <label *ngIf="isAdmin" class="tenant-filter">
+        Tenant / taller
+        <select [(ngModel)]="tenantId" name="tenantId" [disabled]="loadingTenants || loading">
+          <option value="">Todos los tenants</option>
+          <option *ngFor="let tenant of tenants" [value]="tenant.id">
+            {{ tenant.nombre }}{{ tenant.taller_nombre ? ' · ' + tenant.taller_nombre : '' }}
+          </option>
+        </select>
+      </label>
+      <label>
+        Fecha inicio
+        <input type="date" [(ngModel)]="fechaInicio" name="fechaInicio" [disabled]="loading" />
+      </label>
+      <label>
+        Fecha fin
+        <input type="date" [(ngModel)]="fechaFin" name="fechaFin" [disabled]="loading" />
+      </label>
+      <button type="submit" [disabled]="loading">
+        {{ loading ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </form>
+
+    <p *ngIf="error" class="state-message error">{{ error }}</p>
+    <p *ngIf="!loading && data && !hasData" class="state-message empty">Sin datos disponibles</p>
+
+    <div class="cards">
+      <article class="metric-card">
+        <div class="metric-icon">⏱</div>
+        <div>
+          <span>Asignación promedio</span>
+          <strong>{{ formatMinutes(data?.tiempo_promedio_asignacion_min) }}</strong>
+          <small>Reporte → taller asignado</small>
+        </div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-icon">📍</div>
+        <div>
+          <span>Llegada promedio</span>
+          <strong>{{ formatMinutes(data?.tiempo_promedio_llegada_min) }}</strong>
+          <small>Asignación → llegada técnica</small>
+        </div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-icon muted">✕</div>
+        <div>
+          <span>Casos cancelados</span>
+          <strong>{{ data?.casos_cancelados ?? 0 }}</strong>
+          <small>Cancelado, rechazado o no atendido</small>
+        </div>
+      </article>
+      <article class="metric-card">
+        <div class="metric-icon ok">✓</div>
+        <div>
+          <span>Cumplimiento SLA</span>
+          <strong>{{ formatPercent(data?.nivel_cumplimiento_sla) }}</strong>
+          <small>Servicios dentro de 120 min</small>
+        </div>
+      </article>
+    </div>
+
+    <div class="insights-grid">
+      <article class="panel-card incident-panel">
+        <div class="section-head">
+          <div>
+            <h3>Incidentes por tipo</h3>
+            <p>{{ total(data?.incidentes_por_tipo) }} casos registrados</p>
+          </div>
+        </div>
+        <div *ngIf="incidentesVisibles.length === 0" class="empty-inline">Sin datos disponibles</div>
+        <div *ngIf="incidentesVisibles.length > 0" class="donut-layout">
+          <div class="donut incident-donut" [style.background]="incidentDonutStyle()">
+            <div>
+              <strong>{{ total(data?.incidentes_por_tipo) }}</strong>
+              <small>Total</small>
+            </div>
+          </div>
+          <div class="legend-list">
+            <div *ngFor="let item of incidentesVisibles; let i = index" class="legend-row">
+              <i [style.background]="incidentColor(i)"></i>
+              <span>{{ item.label }}</span>
+              <strong>{{ item.valor }} · {{ percent(item, data?.incidentes_por_tipo) }}</strong>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel-card zones-panel">
+        <div class="section-head">
+          <div>
+            <h3>Zonas con más incidentes</h3>
+            <p>Ubicaciones agrupadas de forma simple</p>
+          </div>
+        </div>
+        <div *ngIf="total(data?.zonas_con_mas_incidentes) === 0" class="empty-inline">Sin datos disponibles</div>
+        <div *ngFor="let item of data?.zonas_con_mas_incidentes; let i = index" class="zone-row">
+          <div class="zone-copy">
+            <strong>{{ zonaPrincipal(item, i) }}</strong>
+            <small *ngIf="zonaDetalle(item)">{{ zonaDetalle(item) }}</small>
+          </div>
+          <span class="zone-count">{{ item.valor }}</span>
+          <div class="bar-track"><span [style.width]="barWidth(item, data?.zonas_con_mas_incidentes)"></span></div>
+        </div>
+      </article>
+
+      <article class="panel-card sla-panel">
+        <div class="section-head">
+          <div>
+            <h3>Cumplimiento SLA</h3>
+            <p>Regla operativa: ≤ 120 min</p>
+          </div>
+        </div>
+        <div class="donut sla-donut" [style.background]="slaDonutStyle()">
+          <div>
+            <strong>{{ formatPercent(data?.nivel_cumplimiento_sla) }}</strong>
+            <small>Cumple</small>
+          </div>
+        </div>
+        <div class="sla-legend">
+          <span><i class="ok"></i> Dentro del SLA</span>
+          <strong>{{ formatPercent(slaOk) }}</strong>
+          <span><i class="neutral"></i> Fuera / sin cumplimiento</span>
+          <strong>{{ formatPercent(slaKo) }}</strong>
+        </div>
+      </article>
+    </div>
+
+    <article class="panel-card table-card">
+      <div class="section-head table-head">
+        <div>
+          <h3>Talleres más eficientes</h3>
+          <p>Ordenado por menor tiempo de respuesta y finalización.</p>
+        </div>
+      </div>
+      <div *ngIf="talleresOrdenados.length === 0" class="empty-inline">Sin datos disponibles</div>
+      <div *ngIf="talleresOrdenados.length > 0" class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Taller</th>
+              <th>Servicios completados</th>
+              <th>Tiempo promedio respuesta</th>
+              <th>Tiempo promedio finalización</th>
+              <th>Cumplimiento SLA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let taller of talleresOrdenados">
+              <td>
+                <strong>{{ taller.taller }}</strong>
+              </td>
+              <td>{{ taller.servicios_completados }}</td>
+              <td>{{ formatMinutes(taller.tiempo_promedio_respuesta_min) }}</td>
+              <td>{{ formatMinutes(taller.tiempo_promedio_finalizacion_min) }}</td>
+              <td>
+                <span class="sla-pill">{{ formatPercent(taller.cumplimiento_sla) }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</section>

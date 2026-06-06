@@ -60,6 +60,34 @@ export interface TenantOption {
   tenant_id?: string | null;
 }
 
+export interface KpiSerieItem {
+  label: string;
+  valor: number;
+}
+
+export interface TallerEficienteKpi {
+  taller_id?: string | null;
+  taller: string;
+  servicios_completados: number;
+  tiempo_promedio_respuesta_min?: number | null;
+  tiempo_promedio_finalizacion_min?: number | null;
+  cumplimiento_sla: number;
+}
+
+export interface KpisTenant {
+  tenant_id?: string | null;
+  tenant_nombre?: string | null;
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
+  tiempo_promedio_asignacion_min?: number | null;
+  tiempo_promedio_llegada_min?: number | null;
+  incidentes_por_tipo: KpiSerieItem[];
+  talleres_mas_eficientes: TallerEficienteKpi[];
+  zonas_con_mas_incidentes: KpiSerieItem[];
+  casos_cancelados: number;
+  nivel_cumplimiento_sla: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly apiBase = environment.apiUrl.endsWith('/api')
@@ -70,6 +98,15 @@ export class AdminService {
 
   resumen(): Observable<AdminResumen> {
     return this.http.get<AdminResumen>(`${this.apiBase}/admin/reportes/resumen`);
+  }
+
+  kpisTenant(filtro: { tenant_id?: string; fecha_inicio?: string; fecha_fin?: string }): Observable<KpisTenant> {
+    const query = new URLSearchParams();
+    if ((filtro.tenant_id ?? '').trim()) query.set('tenant_id', filtro.tenant_id!.trim());
+    if ((filtro.fecha_inicio ?? '').trim()) query.set('fecha_inicio', filtro.fecha_inicio!.trim());
+    if ((filtro.fecha_fin ?? '').trim()) query.set('fecha_fin', filtro.fecha_fin!.trim());
+    const qs = query.toString();
+    return this.http.get<KpisTenant>(`${this.apiBase}/admin/kpis-tenant${qs ? `?${qs}` : ''}`);
   }
 
   miPerfil(): Observable<UsuarioPerfil> {
