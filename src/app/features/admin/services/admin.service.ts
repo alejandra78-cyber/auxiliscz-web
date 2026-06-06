@@ -88,6 +88,37 @@ export interface KpisTenant {
   nivel_cumplimiento_sla: number;
 }
 
+export interface ReputacionEvaluacion {
+  estrellas: number;
+  comentario?: string | null;
+  fecha?: string | null;
+  cliente?: string | null;
+}
+
+export interface ReputacionTaller {
+  taller_id: string;
+  nombre_taller: string;
+  estado_taller: string;
+  calificacion_promedio?: number | null;
+  cantidad_evaluaciones: number;
+  servicios_completados: number;
+  servicios_cancelados: number;
+  tiempo_promedio_respuesta_min?: number | null;
+  tiempo_promedio_finalizacion_min?: number | null;
+  cumplimiento_sla: number;
+  monto_total_generado: number;
+  distribucion_estrellas: Record<number, number>;
+  ultimas_evaluaciones: ReputacionEvaluacion[];
+}
+
+export interface ReputacionTalleresResponse {
+  talleres: ReputacionTaller[];
+  talleres_activos: number;
+  calificacion_promedio_general?: number | null;
+  talleres_baja_reputacion: number;
+  servicios_evaluados: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly apiBase = environment.apiUrl.endsWith('/api')
@@ -107,6 +138,31 @@ export class AdminService {
     if ((filtro.fecha_fin ?? '').trim()) query.set('fecha_fin', filtro.fecha_fin!.trim());
     const qs = query.toString();
     return this.http.get<KpisTenant>(`${this.apiBase}/admin/kpis-tenant${qs ? `?${qs}` : ''}`);
+  }
+
+  reputacionTalleres(filtro: {
+    nombre?: string;
+    estado?: string;
+    calificacion_minima?: string;
+    fecha_inicio?: string;
+    fecha_fin?: string;
+  }): Observable<ReputacionTalleresResponse> {
+    const query = new URLSearchParams();
+    if ((filtro.nombre ?? '').trim()) query.set('nombre', filtro.nombre!.trim());
+    if ((filtro.estado ?? '').trim()) query.set('estado', filtro.estado!.trim());
+    if ((filtro.calificacion_minima ?? '').trim()) query.set('calificacion_minima', filtro.calificacion_minima!.trim());
+    if ((filtro.fecha_inicio ?? '').trim()) query.set('fecha_inicio', filtro.fecha_inicio!.trim());
+    if ((filtro.fecha_fin ?? '').trim()) query.set('fecha_fin', filtro.fecha_fin!.trim());
+    const qs = query.toString();
+    return this.http.get<ReputacionTalleresResponse>(`${this.apiBase}/admin/reputacion-talleres${qs ? `?${qs}` : ''}`);
+  }
+
+  suspenderTallerReputacion(tallerId: string): Observable<ReputacionTaller> {
+    return this.http.patch<ReputacionTaller>(`${this.apiBase}/admin/reputacion-talleres/${tallerId}/suspender`, {});
+  }
+
+  reactivarTallerReputacion(tallerId: string): Observable<ReputacionTaller> {
+    return this.http.patch<ReputacionTaller>(`${this.apiBase}/admin/reputacion-talleres/${tallerId}/reactivar`, {});
   }
 
   miPerfil(): Observable<UsuarioPerfil> {

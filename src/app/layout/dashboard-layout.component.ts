@@ -524,6 +524,7 @@ export class DashboardLayoutComponent {
         { label: 'Aprobar talleres', actor: 'Admin', path: '/admin-reportes/aprobar-talleres', roles: ['admin'] },
         { label: 'Reportes y métricas', actor: 'Admin', path: '/admin-reportes/reportes-metricas', roles: ['admin'] },
         { label: 'Dashboard KPIs Operacionales', actor: 'Admin/Taller', path: '/admin-reportes/kpis-operacionales', roles: ['admin', 'taller'] },
+        { label: 'Reputación de talleres', actor: 'Admin', path: '/admin-reportes/reputacion-talleres', roles: ['admin'] },
       ],
     },
   ];

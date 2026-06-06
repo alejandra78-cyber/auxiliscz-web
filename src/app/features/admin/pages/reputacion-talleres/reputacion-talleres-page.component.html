@@ -1,0 +1,126 @@
+<section class="rep-page">
+  <header class="hero">
+    <div>
+      
+      <h2>Reputación de Talleres</h2>
+      <p>Supervisión de calidad y desempeño de talleres con datos reales del sistema.</p>
+    </div>
+  </header>
+
+  <form class="filters" (ngSubmit)="cargar()">
+    <label>Buscar taller <input [(ngModel)]="filtro.nombre" name="nombre" placeholder="Nombre del taller" /></label>
+    <label>
+      Estado
+      <select [(ngModel)]="filtro.estado" name="estado">
+        <option value="">Todos</option>
+        <option value="aprobado">Aprobado</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="rechazado">Rechazado</option>
+        <option value="suspendido">Suspendido</option>
+      </select>
+    </label>
+    <label>
+      Calificación mínima
+      <select [(ngModel)]="filtro.calificacion_minima" name="calificacion">
+        <option value="">Todas</option>
+        <option value="4">4+</option>
+        <option value="3">3+</option>
+        <option value="2">2+</option>
+      </select>
+    </label>
+    <label>Fecha inicio <input type="date" [(ngModel)]="filtro.fecha_inicio" name="inicio" /></label>
+    <label>Fecha fin <input type="date" [(ngModel)]="filtro.fecha_fin" name="fin" /></label>
+    <button type="submit" [disabled]="loading">{{ loading ? 'Actualizando...' : 'Actualizar' }}</button>
+  </form>
+
+  <p *ngIf="error" class="error">{{ error }}</p>
+
+  <div class="kpis">
+    <article><span>Talleres activos</span><strong>{{ data?.talleres_activos ?? 0 }}</strong></article>
+    <article><span>Calificación promedio general</span><strong>{{ formatRating(data?.calificacion_promedio_general) }}</strong></article>
+    <article><span>Baja reputación (&lt; 3 estrellas)</span><strong>{{ data?.talleres_baja_reputacion ?? 0 }}</strong></article>
+    <article><span>Servicios evaluados</span><strong>{{ data?.servicios_evaluados ?? 0 }}</strong></article>
+  </div>
+
+  <article class="table-card">
+    <div class="card-head">
+      <div>
+        <h3>Tabla de reputación</h3>
+        <p>Comparación operativa de talleres registrados.</p>
+      </div>
+    </div>
+    <div *ngIf="!loading && talleres.length === 0" class="empty">Sin datos disponibles</div>
+    <div *ngIf="talleres.length > 0" class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Taller</th>
+            <th>Calificación</th>
+            <th>Evaluaciones</th>
+            <th>Completados</th>
+            <th>Cancelaciones</th>
+            <th>Respuesta</th>
+            <th>SLA</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of talleres">
+            <td><strong>{{ row.nombre_taller }}</strong></td>
+            <td>{{ formatRating(row.calificacion_promedio) }}</td>
+            <td>{{ row.cantidad_evaluaciones }}</td>
+            <td>{{ row.servicios_completados }}</td>
+            <td>{{ row.servicios_cancelados }}</td>
+            <td>{{ formatMinutes(row.tiempo_promedio_respuesta_min) }}</td>
+            <td><span class="sla">{{ row.cumplimiento_sla | number:'1.0-1' }}%</span></td>
+            <td><span class="status" [class.suspended]="row.estado_taller === 'suspendido'">{{ estadoLabel(row.estado_taller) }}</span></td>
+            <td class="actions">
+              <button type="button" class="ghost" (click)="verDetalle(row)">Ver detalle</button>
+              <button *ngIf="row.estado_taller !== 'suspendido'" type="button" class="danger" (click)="suspender(row)" [disabled]="actionLoadingId === row.taller_id">Suspender</button>
+              <button *ngIf="row.estado_taller === 'suspendido'" type="button" class="ok" (click)="reactivar(row)" [disabled]="actionLoadingId === row.taller_id">Reactivar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <div *ngIf="detalle" class="modal-backdrop" (click)="cerrarDetalle()">
+    <section class="modal" (click)="$event.stopPropagation()">
+      <header>
+        <div>
+          <h3>{{ detalle.nombre_taller }}</h3>
+          <p>{{ estadoLabel(detalle.estado_taller) }} · {{ formatMoney(detalle.monto_total_generado) }} generados</p>
+        </div>
+        <button type="button" class="close" (click)="cerrarDetalle()">×</button>
+      </header>
+
+      <div class="detail-grid">
+        <article><span>Calificación</span><strong>{{ formatRating(detalle.calificacion_promedio) }}</strong></article>
+        <article><span>Completados</span><strong>{{ detalle.servicios_completados }}</strong></article>
+        <article><span>Cancelaciones</span><strong>{{ detalle.servicios_cancelados }}</strong></article>
+        <article><span>Respuesta</span><strong>{{ formatMinutes(detalle.tiempo_promedio_respuesta_min) }}</strong></article>
+        <article><span>Finalización</span><strong>{{ formatMinutes(detalle.tiempo_promedio_finalizacion_min) }}</strong></article>
+        <article><span>Cumplimiento SLA</span><strong>{{ detalle.cumplimiento_sla | number:'1.0-1' }}%</strong></article>
+      </div>
+
+      <h4>Distribución de estrellas</h4>
+      <div class="stars">
+        <div *ngFor="let star of [5,4,3,2,1]">
+          <span>{{ star }} estrellas</span>
+          <div><i [style.width.%]="detalle.cantidad_evaluaciones ? (starCount(detalle, star) / detalle.cantidad_evaluaciones) * 100 : 0"></i></div>
+          <strong>{{ starCount(detalle, star) }}</strong>
+        </div>
+      </div>
+
+      <h4>Últimas evaluaciones</h4>
+      <div *ngIf="detalle.ultimas_evaluaciones.length === 0" class="empty">Sin evaluaciones registradas</div>
+      <article *ngFor="let ev of detalle.ultimas_evaluaciones" class="review">
+        <strong>{{ ev.estrellas }} ★</strong>
+        <p>{{ ev.comentario || 'Sin comentario' }}</p>
+        <small>{{ ev.cliente || 'Cliente' }} · {{ ev.fecha | date:'short' }}</small>
+      </article>
+    </section>
+  </div>
+</section>
