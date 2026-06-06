@@ -1,0 +1,85 @@
+<section class="audio-page">
+  <header class="hero">
+    <div>
+      <span>Talleres y Operación · CU35</span>
+      <h2>Reportes por Audio</h2>
+      <p>Consulta métricas de tu taller con comandos de voz y lenguaje natural.</p>
+    </div>
+    <button type="button" class="mic" [class.listening]="escuchando" (click)="escuchar()" [disabled]="procesando">
+      {{ escuchando ? '■ Detener' : '🎙 Hablar' }}
+    </button>
+  </header>
+
+  <article class="query-card">
+    <div class="manual">
+      <label>
+        Consulta reconocida o escrita
+        <textarea [(ngModel)]="consulta" rows="3" placeholder="Ej: ¿Cuánto cobré del 1 al 5 de mayo?"></textarea>
+      </label>
+      <div class="dates">
+        <label>Fecha inicio <input type="date" [(ngModel)]="fechaInicio" /></label>
+        <label>Fecha fin <input type="date" [(ngModel)]="fechaFin" /></label>
+        <button type="button" (click)="consultar()" [disabled]="procesando">{{ procesando ? 'Procesando...' : 'Consultar' }}</button>
+      </div>
+    </div>
+    <div class="status-row">
+      <span [class.active]="escuchando">● Escuchando</span>
+      <span [class.active]="procesando">● Procesando</span>
+      <span [class.active]="!!consulta.trim()">● Consulta reconocida</span>
+      <span [class.active]="resultado && resultado.resumen.length === 0 && resultado.tabla.length === 0">● Sin resultados</span>
+    </div>
+    <p *ngIf="error" class="error">{{ error }}</p>
+  </article>
+
+  <div class="examples">
+    <button *ngFor="let item of ejemplos" type="button" (click)="usarEjemplo(item)">{{ item }}</button>
+  </div>
+
+  <section *ngIf="resultado" class="result">
+    <article class="interpretation">
+      <div class="result-head">
+        <h3>Interpretación</h3>
+        <div class="downloads">
+          <button type="button" class="excel" (click)="descargarExcel()">Descargar Excel</button>
+          <button type="button" (click)="descargarCsv()">Descargar CSV</button>
+          <button type="button" (click)="descargarPdf()">Descargar PDF</button>
+        </div>
+      </div>
+      <div class="chips">
+        <span>Texto: <strong>{{ resultado.consulta }}</strong></span>
+        <span>Intención: <strong>{{ labelIntencion(resultado.intencion) }}</strong></span>
+        <span>Inicio: <strong>{{ resultado.fecha_inicio || 'Sin filtro' }}</strong></span>
+        <span>Fin: <strong>{{ resultado.fecha_fin || 'Sin filtro' }}</strong></span>
+      </div>
+      <p>{{ resultado.mensaje }}</p>
+    </article>
+
+    <div *ngIf="resultado.resumen.length > 0" class="summary">
+      <article *ngFor="let item of resultado.resumen">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.valor }}</strong>
+      </article>
+    </div>
+
+    <article *ngIf="resultado.tabla.length > 0" class="table-card">
+      <h3>Detalle</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th *ngFor="let key of tablaKeys()">{{ key }}</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of resultado.tabla">
+              <td *ngFor="let key of tablaKeys()">{{ row[key] || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article *ngIf="resultado.sugerencias.length > 0" class="suggestions">
+      <h3>Prueba con</h3>
+      <button *ngFor="let item of resultado.sugerencias" type="button" (click)="usarEjemplo(item)">{{ item }}</button>
+    </article>
+  </section>
+</section>

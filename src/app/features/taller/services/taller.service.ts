@@ -227,6 +227,17 @@ export interface TallerAdminOption {
   nombre: string;
 }
 
+export interface ReporteAudioResponse {
+  consulta: string;
+  intencion: string;
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
+  mensaje: string;
+  resumen: Array<{ label: string; valor: string | number }>;
+  tabla: Array<Record<string, string | number | null>>;
+  sugerencias: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class TallerService {
   private readonly apiBase = environment.apiUrl.endsWith('/api')
@@ -237,6 +248,14 @@ export class TallerService {
 
   obtenerMiTaller(): Observable<Taller> {
     return this.http.get<Taller>(`${this.apiBase}/taller/mi-taller`);
+  }
+
+  consultarReporteAudio(consulta: string, fechaInicio?: string, fechaFin?: string): Observable<ReporteAudioResponse> {
+    return this.http.post<ReporteAudioResponse>(`${this.apiBase}/taller/reportes/audio`, {
+      consulta,
+      fecha_inicio: fechaInicio || undefined,
+      fecha_fin: fechaFin || undefined,
+    });
   }
 
   registrarTaller(payload: TallerCreateRequest): Observable<Taller> {

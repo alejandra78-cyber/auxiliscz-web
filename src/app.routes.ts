@@ -13,6 +13,7 @@ import { DesempenoPageComponent } from './app/features/taller/pages/desempeno/de
 import { TrabajoCompletadoPageComponent } from './app/features/taller/pages/trabajo-completado/trabajo-completado-page.component';
 import { SeguimientoTecnicoPageComponent } from './app/features/taller/pages/seguimiento-tecnico/seguimiento-tecnico-page.component';
 import { UbicacionTallerPageComponent } from './app/features/taller/pages/ubicacion-taller/ubicacion-taller-page.component';
+import { ReportesAudioPageComponent } from './app/features/taller/pages/reportes-audio/reportes-audio-page.component';
 import { SolicitudesPageComponent } from './app/features/asignacion/pages/solicitudes/solicitudes-page.component';
 import { EvaluarSolicitudPageComponent } from './app/features/asignacion/pages/evaluar-solicitud/evaluar-solicitud-page.component';
 import { AsignarServicioPageComponent } from './app/features/asignacion/pages/asignar-servicio/asignar-servicio-page.component';
@@ -105,6 +106,11 @@ export const appRoutes: Routes = [
         path: 'talleres-operacion/seguimiento-tecnico',
         component: SeguimientoTecnicoPageComponent,
         canActivate: [roleGuard(['tecnico'])],
+      },
+      {
+        path: 'talleres-operacion/reportes-audio',
+        component: ReportesAudioPageComponent,
+        canActivate: [roleGuard(['taller'])],
       },
 
       // Registro de Emergencias

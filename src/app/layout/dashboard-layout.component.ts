@@ -483,6 +483,7 @@ export class DashboardLayoutComponent {
         { label: 'Disponibilidad del taller', actor: 'Taller', path: '/talleres-operacion/disponibilidad', roles: ['taller'], supervision: true },
         { label: 'Gestionar técnicos', actor: 'Taller', path: '/talleres-operacion/tecnicos', roles: ['taller'], supervision: true },
         { label: 'Desempeño del taller', actor: 'Taller', path: '/talleres-operacion/desempeno', roles: ['taller'], supervision: true },
+        { label: 'Reportes por audio', actor: 'Taller', path: '/talleres-operacion/reportes-audio', roles: ['taller'] },
         { label: 'Registrar trabajo completado', actor: 'Taller/Técnico', path: '/talleres-operacion/trabajo-completado', roles: ['taller', 'tecnico'], supervision: true },
         { label: 'Compartir ubicación técnica', actor: 'Técnico', path: '/talleres-operacion/seguimiento-tecnico', roles: ['tecnico'] },
       ],
