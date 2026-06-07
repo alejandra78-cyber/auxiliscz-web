@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
     <div class="login-shell">
       <div class="login-card">
         <h1>AuxilioSCZ</h1>
-        <p>Inicia sesión para acceder al panel</p>
+        <p>Inicia sesión para acceder</p>
 
         <form [formGroup]="form" (ngSubmit)="submit()" autocomplete="off">
           <label for="email">Email</label>
