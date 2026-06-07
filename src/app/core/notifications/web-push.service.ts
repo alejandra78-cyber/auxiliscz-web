@@ -46,7 +46,7 @@ export class WebPushService {
         firebase.initializeApp(environment.firebase);
       }
       const messaging = firebase.messaging();
-      messaging.onMessage((payload) => console.debug('Push foreground AuxilioSCZ', payload));
+      messaging.onMessage((payload) => this.showForegroundNotification(payload));
       const token = await messaging.getToken({
         vapidKey: environment.vapidKey,
         serviceWorkerRegistration: registration,
@@ -59,6 +59,7 @@ export class WebPushService {
           plataforma: 'web',
         }),
       );
+      console.info('Token push web registrado correctamente');
     } catch (error) {
       console.warn('No se pudo registrar push web', error);
     } finally {
@@ -92,6 +93,26 @@ export class WebPushService {
     await this.loadScript('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
     await this.loadScript('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
     this.sdkLoaded = true;
+  }
+
+  private showForegroundNotification(payload: unknown): void {
+    const map = (payload ?? {}) as {
+      notification?: { title?: string; body?: string };
+      data?: Record<string, string>;
+    };
+    const title = map.notification?.title || map.data?.['titulo'] || 'AuxilioSCZ';
+    const body = map.notification?.body || map.data?.['cuerpo'] || 'Tienes una nueva actualización';
+    console.info('Push foreground AuxilioSCZ', map);
+    if (Notification.permission !== 'granted') return;
+    navigator.serviceWorker.ready
+      .then((registration) =>
+        registration.showNotification(title, {
+          body,
+          icon: '/assets/icons/icon-192.png',
+          data: map.data || {},
+        }),
+      )
+      .catch(() => undefined);
   }
 
   private loadScript(src: string): Promise<void> {

@@ -43,5 +43,15 @@ self.addEventListener('notificationclick', (event) => {
   } else if (solicitudId) {
     url = `/registro-emergencias/comunicacion-notificaciones?incidente_id=${encodeURIComponent(solicitudId)}`;
   }
-  event.waitUntil(clients.openWindow(url));
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });
